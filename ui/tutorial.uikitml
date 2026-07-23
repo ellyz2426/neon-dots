@@ -23,6 +23,8 @@
       <text class="text">VR: Ray pointer + Trigger, Stick + A</text>
       <text class="text">Pause: Esc or B button</text>
       <text class="text">Undo (Zen mode): Z key or Y button</text>
+      <text class="section">2 Player Mode</text>
+      <text class="text">Pass the controller! Both players take turns placing lines on the same device.</text>
     </container>
     <text class="btn" name="btn-back">Back</text>
   </container>

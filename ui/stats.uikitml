@@ -19,6 +19,8 @@
     <container class="row"><text class="label">Win Rate</text><text class="val" name="txt-winrate">0%</text></container>
     <container class="row"><text class="label">Boxes Captured</text><text class="val" name="txt-boxes">0</text></container>
     <container class="row"><text class="label">Best Chain</text><text class="val" name="txt-chain">0</text></container>
+    <container class="row"><text class="label">Win Streak</text><text class="val" name="txt-streak">0</text></container>
+    <container class="row"><text class="label">Best Streak</text><text class="val" name="txt-best-streak">0</text></container>
 
     <container class="divider"></container>
 

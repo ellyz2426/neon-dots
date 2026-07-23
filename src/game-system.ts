@@ -16,7 +16,7 @@ import {
 // ---- Types ----
 type LT = 'h' | 'v';
 type P = 0 | 1 | 2;
-type Mode = 'classic' | 'speed' | 'zen' | 'challenge';
+type Mode = 'classic' | 'speed' | 'zen' | 'challenge' | '2player';
 type Diff = 'easy' | 'medium' | 'hard';
 
 export interface GState {
@@ -35,6 +35,7 @@ export interface GStats {
   played: number; won: number; boxes: number; achvs: string[];
   best: Record<string, number>; wGrid: Record<string, number>;
   wDiff: Record<string, number>; maxChain: number;
+  streak: number; bestStreak: number;
 }
 
 export const COLORS = [
@@ -75,7 +76,7 @@ export const SP = 0.35, DOT_R = 0.022, LW = 0.028, HIT_W = 0.055;
 
 function loadStats(): GStats {
   try { const r = localStorage.getItem('neon-dots-stats'); if (r) return JSON.parse(r); } catch {}
-  return { played: 0, won: 0, boxes: 0, achvs: [], best: {}, wGrid: {}, wDiff: {}, maxChain: 0 };
+  return { played: 0, won: 0, boxes: 0, achvs: [], best: {}, wGrid: {}, wDiff: {}, maxChain: 0, streak: 0, bestStreak: 0 };
 }
 function saveStats(s: GStats) { try { localStorage.setItem('neon-dots-stats', JSON.stringify(s)); } catch {} }
 
@@ -96,6 +97,9 @@ export class GameSystem extends createSystem({
   private kdb = 0;
   private undoStack: UndoEntry[] = [];
   private boxFillAnims: { mesh: Mesh; mark: Mesh; t: number }[] = [];
+  private boardEntranceT = -1;
+  private lastMoveKey = '';
+  private lastMoveFade = 0;
 
   /** Get the world position of a box center (for effects) */
   getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
@@ -197,6 +201,9 @@ export class GameSystem extends createSystem({
     for (let r = 0; r < n - 1; r++) for (let c = 0; c < n; c++) this.mkLine('v', r, c, half, cs);
 
     this.updCursor();
+    // Board entrance animation — start tiny, scale up
+    this.bg.scale.set(0.01, 0.01, 0.01);
+    this.boardEntranceT = 0;
   }
 
   private mkLine(t: LT, row: number, col: number, half: number, cs: typeof COLORS[0]) {
@@ -240,6 +247,8 @@ export class GameSystem extends createSystem({
       (mesh.material as MeshStandardMaterial).opacity = 1.0;
     }
     this.onLinePlaced?.(t, r, c);
+    this.lastMoveKey = `${t}_${r}_${c}`;
+    this.lastMoveFade = 1.0;
 
     const boxesFilled = this.chkBoxes(t, r, c, p);
 
@@ -538,13 +547,17 @@ export class GameSystem extends createSystem({
     const s = this.st; s.over = true; s.on = false;
     const st = this.stats; st.played++;
     let w: 'player' | 'ai' | 'draw' = 'draw';
-    if (s.sc[0] > s.sc[1]) { w = 'player'; st.won++; }
+    if (s.sc[0] > s.sc[1]) { w = 'player'; if (s.mode !== '2player') st.won++; }
     else if (s.sc[1] > s.sc[0]) w = 'ai';
     st.boxes += s.sc[0];
 
-    if (w === 'player') {
+    if (w === 'player' && s.mode !== '2player') {
       st.wGrid[s.n] = (st.wGrid[s.n] || 0) + 1;
       st.wDiff[s.diff] = (st.wDiff[s.diff] || 0) + 1;
+      st.streak = (st.streak || 0) + 1;
+      if (st.streak > (st.bestStreak || 0)) st.bestStreak = st.streak;
+    } else if (w !== 'player' && s.mode !== '2player') {
+      st.streak = 0;
     }
 
     const grant = (id: string) => { if (!st.achvs.includes(id)) { st.achvs.push(id); this.onAchv?.(id); } };
@@ -597,17 +610,19 @@ export class GameSystem extends createSystem({
 
   private doPlayerMove(t: LT, r: number, c: number) {
     const s = this.st;
-    if (s.cur !== 1 || s.over) return;
+    if (s.over) return;
+    if (s.mode !== '2player' && s.cur !== 1) return;
     const arr = t === 'h' ? s.hL : s.vL;
     if (arr[r][c]) return;
 
-    const done = this.place(t, r, c, 1);
+    const p = s.cur as P;
+    const done = this.place(t, r, c, p);
     this.onScore?.();
 
     if (done > 0) {
       // Track chain for current turn
       this.onChain?.(done);
-      if (done >= 3) {
+      if (s.mode !== '2player' && done >= 3) {
         if (!this.stats.achvs.includes('chain3')) { this.stats.achvs.push('chain3'); this.onAchv?.('chain3'); }
         if (done >= 5 && !this.stats.achvs.includes('sweep5')) { this.stats.achvs.push('sweep5'); this.onAchv?.('sweep5'); }
         if (done > this.stats.maxChain) this.stats.maxChain = done;
@@ -618,7 +633,12 @@ export class GameSystem extends createSystem({
     } else {
       if (this.isDone()) { this.end(); return; }
       if (s.mode === 'zen') { this.updCursor(); return; }
-      s.cur = 2; this.aiDly = 0.6; this.onTurn?.();
+      if (s.mode === '2player') {
+        s.cur = s.cur === 1 ? 2 : 1;
+        this.onTurn?.(); this.updCursor();
+      } else {
+        s.cur = 2; this.aiDly = 0.6; this.onTurn?.();
+      }
     }
   }
 
@@ -628,6 +648,29 @@ export class GameSystem extends createSystem({
 
     // Track elapsed time
     s.elapsed += delta;
+
+    // Board entrance animation
+    if (this.boardEntranceT >= 0 && this.boardEntranceT < 1) {
+      this.boardEntranceT += delta * 3;
+      if (this.boardEntranceT >= 1) {
+        this.boardEntranceT = -1;
+        this.bg.scale.set(1, 1, 1);
+      } else {
+        const bt = this.boardEntranceT;
+        const ease = bt < 0.7 ? (bt / 0.7) * 1.1 : 1.1 - (bt - 0.7) / 0.3 * 0.1;
+        this.bg.scale.set(ease, ease, ease);
+      }
+    }
+
+    // Last move highlight fade
+    if (this.lastMoveFade > 0) {
+      this.lastMoveFade -= delta * 2;
+      if (this.lastMoveFade < 0) this.lastMoveFade = 0;
+      const lm = this.meshMap.get(this.lastMoveKey);
+      if (lm) {
+        (lm.material as MeshStandardMaterial).emissiveIntensity = 0.9 + this.lastMoveFade * 0.8;
+      }
+    }
 
     // Animate box fills (scale up from 0 to 1)
     for (let i = this.boxFillAnims.length - 1; i >= 0; i--) {
@@ -677,7 +720,7 @@ export class GameSystem extends createSystem({
       if (s.timer <= 0) { s.timer = 0; this.end(); return; }
     }
 
-    if (s.cur === 2) {
+    if (s.cur === 2 && s.mode !== '2player') {
       this.aiDly -= delta;
       if (this.aiDly <= 0) this.doAi();
       return;
@@ -685,6 +728,7 @@ export class GameSystem extends createSystem({
 
     // Hover
     const hcs = COLORS[s.ci];
+    const hoverClr = (s.mode === '2player' && s.cur === 2) ? hcs.a : hcs.p;
     this.queries.lines.entities.forEach(e => {
       const inf = this.infoMap.get(e.index);
       if (!inf) return;
@@ -693,7 +737,7 @@ export class GameSystem extends createSystem({
       const m = this.meshMap.get(`${inf.t}_${inf.r}_${inf.c}`);
       if (!m) return;
       if (e.hasComponent(Hovered)) {
-        (m.material as MeshStandardMaterial).emissive.set(hcs.p);
+        (m.material as MeshStandardMaterial).emissive.set(hoverClr);
         (m.material as MeshStandardMaterial).emissiveIntensity = 0.6;
         (m.material as MeshStandardMaterial).opacity = 0.65;
       } else {

@@ -33,7 +33,7 @@ export class UISystem extends createSystem({
   private diffIdx = 1;
   private colorIdx = 0;
   private modeIdx = 0;
-  private modes: ('classic' | 'speed' | 'zen' | 'challenge')[] = ['classic', 'speed', 'zen', 'challenge'];
+  private modes: ('classic' | 'speed' | 'zen' | 'challenge' | '2player')[] = ['classic', 'speed', 'zen', 'challenge', '2player'];
   private kdb = 0;
   private audio!: AudioSystem;
   private effects!: EffectsSystem;
@@ -100,10 +100,11 @@ export class UISystem extends createSystem({
       this.btn(doc, 'btn-grid-next', () => { this.gridIdx = (this.gridIdx + 1) % GRIDS.length; this.updSettings(); });
       this.btn(doc, 'btn-diff-prev', () => { this.diffIdx = (this.diffIdx - 1 + 3) % 3; this.updSettings(); });
       this.btn(doc, 'btn-diff-next', () => { this.diffIdx = (this.diffIdx + 1) % 3; this.updSettings(); });
-      this.btn(doc, 'btn-mode-prev', () => { this.modeIdx = (this.modeIdx - 1 + 4) % 4; this.updSettings(); });
-      this.btn(doc, 'btn-mode-next', () => { this.modeIdx = (this.modeIdx + 1) % 4; this.updSettings(); });
+      this.btn(doc, 'btn-mode-prev', () => { this.modeIdx = (this.modeIdx - 1 + 5) % 5; this.updSettings(); });
+      this.btn(doc, 'btn-mode-next', () => { this.modeIdx = (this.modeIdx + 1) % 5; this.updSettings(); });
       this.btn(doc, 'btn-color-prev', () => { this.colorIdx = (this.colorIdx - 1 + COLORS.length) % COLORS.length; this.updSettings(); });
       this.btn(doc, 'btn-color-next', () => { this.colorIdx = (this.colorIdx + 1) % COLORS.length; this.updSettings(); });
+      this.btn(doc, 'btn-sound-toggle', () => { this.audio.toggleMute(); this.updSettings(); });
       this.btn(doc, 'btn-back', () => this.showPanel('menu'));
       this.updSettings();
     });
@@ -166,9 +167,12 @@ export class UISystem extends createSystem({
 
   private updHud() {
     const s = this.game.st;
-    this.txt('hud', 'txt-p1-score', `You: ${s.sc[0]}`);
-    this.txt('hud', 'txt-p2-score', `AI: ${s.sc[1]}`);
-    this.txt('hud', 'txt-turn', s.cur === 1 ? 'Your Turn' : 'AI Thinking...');
+    const is2p = s.mode === '2player';
+    this.txt('hud', 'txt-p1-score', `${is2p ? 'P1' : 'You'}: ${s.sc[0]}`);
+    this.txt('hud', 'txt-p2-score', `${is2p ? 'P2' : 'AI'}: ${s.sc[1]}`);
+    this.txt('hud', 'txt-turn', is2p
+      ? (s.cur === 1 ? "P1's Turn" : "P2's Turn")
+      : (s.cur === 1 ? 'Your Turn' : 'AI Thinking...'));
     this.txt('hud', 'txt-boxes', `${s.sc[0] + s.sc[1]}/${s.total}`);
     if (s.mode === 'speed') {
       this.txt('hud', 'txt-timer', `${Math.ceil(s.timer)}s`);
@@ -176,9 +180,9 @@ export class UISystem extends createSystem({
       this.txt('hud', 'txt-timer', `Moves: ${s.moves}`);
     }
     // Mode and difficulty indicator
-    const modeNames: Record<string, string> = { classic: 'Classic', speed: 'Speed', zen: 'Zen', challenge: 'Challenge' };
+    const modeNames: Record<string, string> = { classic: 'Classic', speed: 'Speed', zen: 'Zen', challenge: 'Challenge', '2player': '2 Player' };
     const diffCaps: Record<string, string> = { easy: 'Easy', medium: 'Med', hard: 'Hard' };
-    this.txt('hud', 'txt-mode-info', `${modeNames[s.mode]} · ${diffCaps[s.diff]}`);
+    this.txt('hud', 'txt-mode-info', is2p ? '2 Player' : `${modeNames[s.mode]} · ${diffCaps[s.diff]}`);
     // Undo hint for Zen mode
     this.txt('hud', 'txt-undo', this.game.canUndo() ? '[Z] Undo' : '');
   }
@@ -192,7 +196,10 @@ export class UISystem extends createSystem({
 
   private showResults(winner: 'player' | 'ai' | 'draw') {
     const s = this.game.st;
-    const titles: Record<string, string> = { player: 'You Win!', ai: 'AI Wins!', draw: 'Draw!' };
+    const is2p = s.mode === '2player';
+    const titles: Record<string, string> = is2p
+      ? { player: 'Player 1 Wins!', ai: 'Player 2 Wins!', draw: 'Draw!' }
+      : { player: 'You Win!', ai: 'AI Wins!', draw: 'Draw!' };
     this.txt('results', 'txt-title', titles[winner]);
     this.txt('results', 'txt-score', `${s.sc[0]} - ${s.sc[1]}`);
     this.txt('results', 'txt-moves', `Moves: ${s.moves}`);
@@ -200,8 +207,9 @@ export class UISystem extends createSystem({
     // Show elapsed time on results
     const em = Math.floor(s.elapsed / 60);
     const es = Math.floor(s.elapsed % 60);
+    const streakTxt = !is2p && this.game.stats.streak > 1 ? ` | Streak: ${this.game.stats.streak}` : '';
     this.txt('results', 'txt-record',
-      `${em}:${es.toString().padStart(2, '0')} | Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L`);
+      `${em}:${es.toString().padStart(2, '0')} | Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L${streakTxt}`);
 
     // Celebration or defeat effects
     if (winner === 'player') {
@@ -220,11 +228,12 @@ export class UISystem extends createSystem({
   private updSettings() {
     const g = GRIDS[this.gridIdx];
     const diffs = ['Easy', 'Medium', 'Hard'];
-    const modeNames = ['Classic', 'Speed (90s)', 'Zen', 'Challenge'];
+    const modeNames = ['Classic', 'Speed (90s)', 'Zen', 'Challenge', '2 Player'];
     this.txt('settings', 'txt-grid', g.lbl);
     this.txt('settings', 'txt-diff', diffs[this.diffIdx]);
     this.txt('settings', 'txt-mode', modeNames[this.modeIdx]);
     this.txt('settings', 'txt-color', COLORS[this.colorIdx].nm);
+    this.txt('settings', 'txt-sound', this.audio.isMuted() ? 'OFF' : 'ON');
   }
 
   private updAchvPanel() {
@@ -255,6 +264,8 @@ export class UISystem extends createSystem({
     this.txt('stats', 'txt-winrate', `${wr}%`);
     this.txt('stats', 'txt-boxes', `${stats.boxes}`);
     this.txt('stats', 'txt-chain', `${stats.maxChain}`);
+    this.txt('stats', 'txt-streak', `${stats.streak || 0}`);
+    this.txt('stats', 'txt-best-streak', `${stats.bestStreak || 0}`);
     this.txt('stats', 'txt-w-2x2', `${stats.wGrid['3'] || 0}`);
     this.txt('stats', 'txt-w-3x3', `${stats.wGrid['4'] || 0}`);
     this.txt('stats', 'txt-w-4x4', `${stats.wGrid['5'] || 0}`);

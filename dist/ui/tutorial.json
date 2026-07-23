@@ -153,6 +153,28 @@
                   "class": "text"
                 },
                 "dataUid": "uid-16"
+              },
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "2 Player Mode"
+                ],
+                "properties": {
+                  "class": "section"
+                },
+                "dataUid": "uid-17"
+              },
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "Pass the controller! Both players take turns placing lines on the same device."
+                ],
+                "properties": {
+                  "class": "text"
+                },
+                "dataUid": "uid-18"
               }
             ],
             "properties": {
@@ -170,7 +192,7 @@
               "class": "btn",
               "name": "btn-back"
             },
-            "dataUid": "uid-17"
+            "dataUid": "uid-19"
           }
         ],
         "properties": {
@@ -248,7 +270,7 @@
         "column": 0
       },
       "end": {
-        "line": 28,
+        "line": 30,
         "column": 8
       }
     },
@@ -318,7 +340,7 @@
         "column": 2
       },
       "end": {
-        "line": 27,
+        "line": 29,
         "column": 14
       }
     },
@@ -338,7 +360,7 @@
         "column": 4
       },
       "end": {
-        "line": 25,
+        "line": 27,
         "column": 16
       }
     },
@@ -464,11 +486,31 @@
     },
     "uid-17": {
       "start": {
+        "line": 25,
+        "column": 6
+      },
+      "end": {
+        "line": 25,
+        "column": 48
+      }
+    },
+    "uid-18": {
+      "start": {
         "line": 26,
-        "column": 4
+        "column": 6
       },
       "end": {
         "line": 26,
+        "column": 110
+      }
+    },
+    "uid-19": {
+      "start": {
+        "line": 28,
+        "column": 4
+      },
+      "end": {
+        "line": 28,
         "column": 49
       }
     }

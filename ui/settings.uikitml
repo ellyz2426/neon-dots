@@ -36,6 +36,11 @@
       <text class="val" name="txt-color">Cyan</text>
       <text class="arrow" name="btn-color-next">&gt;</text>
     </container>
+    <container class="row">
+      <text class="label">Sound</text>
+      <text class="val" name="txt-sound">ON</text>
+      <text class="arrow" name="btn-sound-toggle">Toggle</text>
+    </container>
     <text class="btn" name="btn-back">Back</text>
   </container>
 </panel>

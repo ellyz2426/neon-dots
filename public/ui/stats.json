@@ -197,11 +197,77 @@
           {
             "sourceTag": "container",
             "type": "custom",
+            "children": [
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "Win Streak"
+                ],
+                "properties": {
+                  "class": "label"
+                },
+                "dataUid": "uid-21"
+              },
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "0"
+                ],
+                "properties": {
+                  "class": "val",
+                  "name": "txt-streak"
+                },
+                "dataUid": "uid-22"
+              }
+            ],
+            "properties": {
+              "class": "row"
+            },
+            "dataUid": "uid-20"
+          },
+          {
+            "sourceTag": "container",
+            "type": "custom",
+            "children": [
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "Best Streak"
+                ],
+                "properties": {
+                  "class": "label"
+                },
+                "dataUid": "uid-24"
+              },
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "0"
+                ],
+                "properties": {
+                  "class": "val",
+                  "name": "txt-best-streak"
+                },
+                "dataUid": "uid-25"
+              }
+            ],
+            "properties": {
+              "class": "row"
+            },
+            "dataUid": "uid-23"
+          },
+          {
+            "sourceTag": "container",
+            "type": "custom",
             "children": [],
             "properties": {
               "class": "divider"
             },
-            "dataUid": "uid-20"
+            "dataUid": "uid-26"
           },
           {
             "sourceTag": "text",
@@ -212,7 +278,7 @@
             "properties": {
               "class": "section"
             },
-            "dataUid": "uid-21"
+            "dataUid": "uid-27"
           },
           {
             "sourceTag": "container",
@@ -227,7 +293,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-23"
+                "dataUid": "uid-29"
               },
               {
                 "sourceTag": "text",
@@ -239,13 +305,13 @@
                   "class": "val",
                   "name": "txt-w-2x2"
                 },
-                "dataUid": "uid-24"
+                "dataUid": "uid-30"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-22"
+            "dataUid": "uid-28"
           },
           {
             "sourceTag": "container",
@@ -260,7 +326,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-26"
+                "dataUid": "uid-32"
               },
               {
                 "sourceTag": "text",
@@ -272,13 +338,13 @@
                   "class": "val",
                   "name": "txt-w-3x3"
                 },
-                "dataUid": "uid-27"
+                "dataUid": "uid-33"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-25"
+            "dataUid": "uid-31"
           },
           {
             "sourceTag": "container",
@@ -293,7 +359,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-29"
+                "dataUid": "uid-35"
               },
               {
                 "sourceTag": "text",
@@ -305,13 +371,13 @@
                   "class": "val",
                   "name": "txt-w-4x4"
                 },
-                "dataUid": "uid-30"
+                "dataUid": "uid-36"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-28"
+            "dataUid": "uid-34"
           },
           {
             "sourceTag": "container",
@@ -320,7 +386,7 @@
             "properties": {
               "class": "divider"
             },
-            "dataUid": "uid-31"
+            "dataUid": "uid-37"
           },
           {
             "sourceTag": "text",
@@ -331,7 +397,7 @@
             "properties": {
               "class": "section"
             },
-            "dataUid": "uid-32"
+            "dataUid": "uid-38"
           },
           {
             "sourceTag": "container",
@@ -346,7 +412,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-34"
+                "dataUid": "uid-40"
               },
               {
                 "sourceTag": "text",
@@ -358,13 +424,13 @@
                   "class": "val",
                   "name": "txt-w-easy"
                 },
-                "dataUid": "uid-35"
+                "dataUid": "uid-41"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-33"
+            "dataUid": "uid-39"
           },
           {
             "sourceTag": "container",
@@ -379,7 +445,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-37"
+                "dataUid": "uid-43"
               },
               {
                 "sourceTag": "text",
@@ -391,13 +457,13 @@
                   "class": "val",
                   "name": "txt-w-med"
                 },
-                "dataUid": "uid-38"
+                "dataUid": "uid-44"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-36"
+            "dataUid": "uid-42"
           },
           {
             "sourceTag": "container",
@@ -412,7 +478,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-40"
+                "dataUid": "uid-46"
               },
               {
                 "sourceTag": "text",
@@ -424,13 +490,13 @@
                   "class": "val",
                   "name": "txt-w-hard"
                 },
-                "dataUid": "uid-41"
+                "dataUid": "uid-47"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-39"
+            "dataUid": "uid-45"
           },
           {
             "sourceTag": "container",
@@ -439,7 +505,7 @@
             "properties": {
               "class": "divider"
             },
-            "dataUid": "uid-42"
+            "dataUid": "uid-48"
           },
           {
             "sourceTag": "text",
@@ -450,7 +516,7 @@
             "properties": {
               "class": "section"
             },
-            "dataUid": "uid-43"
+            "dataUid": "uid-49"
           },
           {
             "sourceTag": "container",
@@ -465,7 +531,7 @@
                 "properties": {
                   "class": "label"
                 },
-                "dataUid": "uid-45"
+                "dataUid": "uid-51"
               },
               {
                 "sourceTag": "text",
@@ -477,13 +543,13 @@
                   "class": "val",
                   "name": "txt-achvs"
                 },
-                "dataUid": "uid-46"
+                "dataUid": "uid-52"
               }
             ],
             "properties": {
               "class": "row"
             },
-            "dataUid": "uid-44"
+            "dataUid": "uid-50"
           },
           {
             "sourceTag": "text",
@@ -495,7 +561,7 @@
               "class": "btn",
               "name": "btn-back"
             },
-            "dataUid": "uid-47"
+            "dataUid": "uid-53"
           }
         ],
         "properties": {
@@ -589,7 +655,7 @@
         "column": 0
       },
       "end": {
-        "line": 43,
+        "line": 45,
         "column": 8
       }
     },
@@ -679,7 +745,7 @@
         "column": 2
       },
       "end": {
-        "line": 42,
+        "line": 44,
         "column": 14
       }
     },
@@ -855,82 +921,82 @@
     },
     "uid-20": {
       "start": {
-        "line": 22,
+        "line": 21,
         "column": 4
       },
       "end": {
-        "line": 22,
-        "column": 43
+        "line": 21,
+        "column": 120
       }
     },
     "uid-21": {
       "start": {
-        "line": 24,
-        "column": 4
+        "line": 21,
+        "column": 27
       },
       "end": {
-        "line": 24,
-        "column": 45
+        "line": 21,
+        "column": 64
       }
     },
     "uid-22": {
       "start": {
-        "line": 25,
-        "column": 4
+        "line": 21,
+        "column": 64
       },
       "end": {
-        "line": 25,
-        "column": 117
+        "line": 21,
+        "column": 108
       }
     },
     "uid-23": {
       "start": {
-        "line": 25,
-        "column": 27
+        "line": 22,
+        "column": 4
       },
       "end": {
-        "line": 25,
-        "column": 62
+        "line": 22,
+        "column": 126
       }
     },
     "uid-24": {
       "start": {
-        "line": 25,
-        "column": 62
+        "line": 22,
+        "column": 27
       },
       "end": {
-        "line": 25,
-        "column": 105
+        "line": 22,
+        "column": 65
       }
     },
     "uid-25": {
       "start": {
-        "line": 26,
-        "column": 4
+        "line": 22,
+        "column": 65
       },
       "end": {
-        "line": 26,
-        "column": 117
+        "line": 22,
+        "column": 114
       }
     },
     "uid-26": {
       "start": {
-        "line": 26,
-        "column": 27
+        "line": 24,
+        "column": 4
       },
       "end": {
-        "line": 26,
-        "column": 62
+        "line": 24,
+        "column": 43
       }
     },
     "uid-27": {
       "start": {
         "line": 26,
-        "column": 62
+        "column": 4
       },
       "end": {
         "line": 26,
-        "column": 105
+        "column": 45
       }
     },
     "uid-28": {
@@ -965,82 +1031,82 @@
     },
     "uid-31": {
       "start": {
-        "line": 29,
+        "line": 28,
         "column": 4
       },
       "end": {
-        "line": 29,
-        "column": 43
+        "line": 28,
+        "column": 117
       }
     },
     "uid-32": {
       "start": {
-        "line": 31,
-        "column": 4
+        "line": 28,
+        "column": 27
       },
       "end": {
-        "line": 31,
-        "column": 46
+        "line": 28,
+        "column": 62
       }
     },
     "uid-33": {
       "start": {
-        "line": 32,
-        "column": 4
+        "line": 28,
+        "column": 62
       },
       "end": {
-        "line": 32,
-        "column": 119
+        "line": 28,
+        "column": 105
       }
     },
     "uid-34": {
       "start": {
-        "line": 32,
-        "column": 27
+        "line": 29,
+        "column": 4
       },
       "end": {
-        "line": 32,
-        "column": 63
+        "line": 29,
+        "column": 117
       }
     },
     "uid-35": {
       "start": {
-        "line": 32,
-        "column": 63
+        "line": 29,
+        "column": 27
       },
       "end": {
-        "line": 32,
-        "column": 107
+        "line": 29,
+        "column": 62
       }
     },
     "uid-36": {
       "start": {
-        "line": 33,
-        "column": 4
+        "line": 29,
+        "column": 62
       },
       "end": {
-        "line": 33,
-        "column": 120
+        "line": 29,
+        "column": 105
       }
     },
     "uid-37": {
       "start": {
-        "line": 33,
-        "column": 27
+        "line": 31,
+        "column": 4
       },
       "end": {
-        "line": 33,
-        "column": 65
+        "line": 31,
+        "column": 43
       }
     },
     "uid-38": {
       "start": {
         "line": 33,
-        "column": 65
+        "column": 4
       },
       "end": {
         "line": 33,
-        "column": 108
+        "column": 46
       }
     },
     "uid-39": {
@@ -1075,61 +1141,121 @@
     },
     "uid-42": {
       "start": {
-        "line": 36,
+        "line": 35,
         "column": 4
       },
       "end": {
-        "line": 36,
-        "column": 43
+        "line": 35,
+        "column": 120
       }
     },
     "uid-43": {
       "start": {
-        "line": 38,
-        "column": 4
+        "line": 35,
+        "column": 27
       },
       "end": {
-        "line": 38,
-        "column": 45
+        "line": 35,
+        "column": 65
       }
     },
     "uid-44": {
       "start": {
-        "line": 39,
-        "column": 4
+        "line": 35,
+        "column": 65
       },
       "end": {
-        "line": 39,
-        "column": 120
+        "line": 35,
+        "column": 108
       }
     },
     "uid-45": {
       "start": {
-        "line": 39,
-        "column": 27
+        "line": 36,
+        "column": 4
       },
       "end": {
-        "line": 39,
-        "column": 62
+        "line": 36,
+        "column": 119
       }
     },
     "uid-46": {
       "start": {
-        "line": 39,
-        "column": 62
+        "line": 36,
+        "column": 27
       },
       "end": {
-        "line": 39,
-        "column": 108
+        "line": 36,
+        "column": 63
       }
     },
     "uid-47": {
+      "start": {
+        "line": 36,
+        "column": 63
+      },
+      "end": {
+        "line": 36,
+        "column": 107
+      }
+    },
+    "uid-48": {
+      "start": {
+        "line": 38,
+        "column": 4
+      },
+      "end": {
+        "line": 38,
+        "column": 43
+      }
+    },
+    "uid-49": {
+      "start": {
+        "line": 40,
+        "column": 4
+      },
+      "end": {
+        "line": 40,
+        "column": 45
+      }
+    },
+    "uid-50": {
       "start": {
         "line": 41,
         "column": 4
       },
       "end": {
         "line": 41,
+        "column": 120
+      }
+    },
+    "uid-51": {
+      "start": {
+        "line": 41,
+        "column": 27
+      },
+      "end": {
+        "line": 41,
+        "column": 62
+      }
+    },
+    "uid-52": {
+      "start": {
+        "line": 41,
+        "column": 62
+      },
+      "end": {
+        "line": 41,
+        "column": 108
+      }
+    },
+    "uid-53": {
+      "start": {
+        "line": 43,
+        "column": 4
+      },
+      "end": {
+        "line": 43,
         "column": 49
       }
     }

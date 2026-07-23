@@ -62,8 +62,12 @@ function mkMelodyUrl(notes: { freq: number; dur: number }[], vol: number, decay:
 export class AudioSystem extends createSystem({}) {
   private sounds: Record<string, string> = {};
   private entities: Record<string, Entity> = {};
+  private muted = false;
 
   init() {
+    // Restore mute state
+    try { this.muted = localStorage.getItem('neon-dots-muted') === '1'; } catch {}
+
     // Victory melody: C5-E5-G5-C6 ascending arpeggio
     const victoryMelody = mkMelodyUrl([
       { freq: 523, dur: 0.15 }, { freq: 659, dur: 0.15 },
@@ -98,11 +102,20 @@ export class AudioSystem extends createSystem({}) {
   }
 
   sfx(name: string) {
+    if (this.muted) return;
     const ent = this.entities[name];
     if (ent) {
       try { AudioUtils.play(ent); } catch {}
     }
   }
+
+  toggleMute(): boolean {
+    this.muted = !this.muted;
+    try { localStorage.setItem('neon-dots-muted', this.muted ? '1' : '0'); } catch {}
+    return this.muted;
+  }
+
+  isMuted(): boolean { return this.muted; }
 
   update() {}
 }
