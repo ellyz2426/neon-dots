@@ -11,10 +11,12 @@ import {
   AmbientLight,
   PointLight,
   Entity,
+  Vector3,
 } from '@iwsdk/core';
 import { GameSystem } from './game-system.js';
 import { UISystem } from './ui-system.js';
 import { AudioSystem } from './audio-system.js';
+import { EffectsSystem } from './effects-system.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -91,6 +93,7 @@ const panelDefs: { key: string; config: string; pos: [number, number, number]; s
   { key: 'pause',    config: './ui/pause.json',    pos: [0, pY, pZ],       show: false },
   { key: 'achpanel', config: './ui/achpanel.json', pos: [0, pY, pZ],       show: false },
   { key: 'tutorial', config: './ui/tutorial.json', pos: [0, pY, pZ],       show: false },
+  { key: 'stats',    config: './ui/stats.json',    pos: [0, pY, pZ],       show: false },
 ];
 
 const panelEntities: Record<string, Entity> = {};
@@ -110,13 +113,31 @@ for (const pd of panelDefs) {
 world.registerSystem(GameSystem);
 world.registerSystem(UISystem);
 world.registerSystem(AudioSystem);
+world.registerSystem(EffectsSystem);
 
 const gameSystem = world.getSystem(GameSystem)!;
 const uiSystem = world.getSystem(UISystem)!;
 const audioSystem = world.getSystem(AudioSystem)!;
+const effectsSystem = world.getSystem(EffectsSystem)!;
 
 uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions });
 
 // Wire audio into game callbacks
 const origOnScore = gameSystem.onScore;
 gameSystem.onScore = () => { origOnScore?.(); audioSystem.sfx('place'); };
+
+// Wire effects into game callbacks
+gameSystem.onBoxComplete = (row: number, col: number) => {
+  const pos = gameSystem.getBoxWorldPos(row, col);
+  if (pos) {
+    effectsSystem.burst(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci, 14);
+    audioSystem.sfx('box');
+  }
+};
+
+gameSystem.onLinePlaced = (_t, row, col) => {
+  const pos = gameSystem.getLineWorldPos(_t, row, col);
+  if (pos) {
+    effectsSystem.lineBurst(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci);
+  }
+};

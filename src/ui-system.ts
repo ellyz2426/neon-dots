@@ -10,7 +10,7 @@ import {
 } from '@iwsdk/core';
 import { GameSystem, ACHVS, COLORS, GRIDS, type GState } from './game-system.js';
 
-type PanelKey = 'menu' | 'hud' | 'results' | 'settings' | 'pause' | 'achpanel' | 'tutorial';
+type PanelKey = 'menu' | 'hud' | 'results' | 'settings' | 'pause' | 'achpanel' | 'tutorial' | 'stats';
 
 export class UISystem extends createSystem({
   menuP:    { required: [PanelUI, PanelDocument], where: [eq(PanelUI, 'config', './ui/menu.json')] },
@@ -20,6 +20,7 @@ export class UISystem extends createSystem({
   pauseP:   { required: [PanelUI, PanelDocument], where: [eq(PanelUI, 'config', './ui/pause.json')] },
   achP:     { required: [PanelUI, PanelDocument], where: [eq(PanelUI, 'config', './ui/achpanel.json')] },
   tutP:     { required: [PanelUI, PanelDocument], where: [eq(PanelUI, 'config', './ui/tutorial.json')] },
+  statsP:   { required: [PanelUI, PanelDocument], where: [eq(PanelUI, 'config', './ui/stats.json')] },
 }) {
   private game!: GameSystem;
   private panels!: Record<PanelKey, Entity>;
@@ -33,6 +34,16 @@ export class UISystem extends createSystem({
   private modes: ('classic' | 'speed' | 'zen' | 'challenge')[] = ['classic', 'speed', 'zen', 'challenge'];
   private kdb = 0;
 
+  // Delta-time notification timer (replaces setTimeout)
+  private notifyTimer = 0;
+
+  // Achievements pagination
+  private achvPage = 0;
+
+  // Chain combo tracking
+  private chainCount = 0;
+  private chainTimer = 0;
+
   setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]> }) {
     this.game = r.game;
     this.panels = r.panels as Record<PanelKey, Entity>;
@@ -40,11 +51,12 @@ export class UISystem extends createSystem({
 
     // Wire game callbacks
     this.game.onScore = () => this.updHud();
-    this.game.onTurn = () => this.updHud();
+    this.game.onTurn = () => { this.updHud(); this.chainCount = 0; };
     this.game.onTimer = () => this.updTimer();
     this.game.onOver = (w) => this.showResults(w);
     this.game.onAchv = (id) => this.showAchvNotify(id);
     this.game.onReady = () => { this.showPanel('hud'); this.updHud(); };
+    this.game.onChain = (count) => this.showChainCombo(count);
   }
 
   init() {
@@ -61,7 +73,8 @@ export class UISystem extends createSystem({
       this.btn(doc, 'btn-play', () => this.startGame());
       this.btn(doc, 'btn-settings', () => this.showPanel('settings'));
       this.btn(doc, 'btn-tutorial', () => this.showPanel('tutorial'));
-      this.btn(doc, 'btn-achievements', () => { this.updAchvPanel(); this.showPanel('achpanel'); });
+      this.btn(doc, 'btn-achievements', () => { this.achvPage = 0; this.updAchvPanel(); this.showPanel('achpanel'); });
+      this.btn(doc, 'btn-stats', () => { this.updStatsPanel(); this.showPanel('stats'); });
     });
 
     wirePanel('hudP', 'hud', (_doc) => {});
@@ -92,9 +105,15 @@ export class UISystem extends createSystem({
 
     wirePanel('achP', 'achpanel', (doc) => {
       this.btn(doc, 'btn-back', () => this.showPanel('menu'));
+      this.btn(doc, 'btn-achv-prev', () => { this.achvPage = Math.max(0, this.achvPage - 1); this.updAchvPanel(); });
+      this.btn(doc, 'btn-achv-next', () => { this.achvPage = Math.min(1, this.achvPage + 1); this.updAchvPanel(); });
     });
 
     wirePanel('tutP', 'tutorial', (doc) => {
+      this.btn(doc, 'btn-back', () => this.showPanel('menu'));
+    });
+
+    wirePanel('statsP', 'stats', (doc) => {
       this.btn(doc, 'btn-back', () => this.showPanel('menu'));
     });
   }
@@ -111,7 +130,7 @@ export class UISystem extends createSystem({
 
   showPanel(key: PanelKey) {
     this.visible = key;
-    const keys: PanelKey[] = ['menu', 'hud', 'results', 'settings', 'pause', 'achpanel', 'tutorial'];
+    const keys: PanelKey[] = ['menu', 'hud', 'results', 'settings', 'pause', 'achpanel', 'tutorial', 'stats'];
     for (const k of keys) {
       const ent = this.panels[k];
       if (!ent?.object3D) continue;
@@ -127,6 +146,9 @@ export class UISystem extends createSystem({
   private startGame() {
     const g = GRIDS[this.gridIdx];
     const diffs: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard'];
+    this.chainCount = 0;
+    this.chainTimer = 0;
+    this.notifyTimer = 0;
     this.game.start(g.n, this.modes[this.modeIdx], diffs[this.diffIdx], this.colorIdx);
   }
 
@@ -174,27 +196,80 @@ export class UISystem extends createSystem({
   private updAchvPanel() {
     const stats = this.game.stats;
     this.txt('achpanel', 'txt-count', `${stats.achvs.length}/${ACHVS.length}`);
-    // Update first 10 achievement slots
+    this.txt('achpanel', 'txt-achv-page', `Page ${this.achvPage + 1}/2`);
+
+    const offset = this.achvPage * 10;
     for (let i = 0; i < 10; i++) {
-      const a = ACHVS[i];
-      if (!a) break;
+      const idx = offset + i;
+      const a = ACHVS[idx];
+      if (!a) {
+        this.txt('achpanel', `txt-a${i}-name`, '');
+        this.txt('achpanel', `txt-a${i}-desc`, '');
+        continue;
+      }
       const unlocked = stats.achvs.includes(a.id);
       this.txt('achpanel', `txt-a${i}-name`, unlocked ? a.nm : '???');
       this.txt('achpanel', `txt-a${i}-desc`, unlocked ? a.ds : 'Locked');
     }
   }
 
+  private updStatsPanel() {
+    const stats = this.game.stats;
+    const wr = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
+    this.txt('stats', 'txt-played', `${stats.played}`);
+    this.txt('stats', 'txt-won', `${stats.won}`);
+    this.txt('stats', 'txt-winrate', `${wr}%`);
+    this.txt('stats', 'txt-boxes', `${stats.boxes}`);
+    this.txt('stats', 'txt-chain', `${stats.maxChain}`);
+    this.txt('stats', 'txt-w-2x2', `${stats.wGrid['3'] || 0}`);
+    this.txt('stats', 'txt-w-3x3', `${stats.wGrid['4'] || 0}`);
+    this.txt('stats', 'txt-w-4x4', `${stats.wGrid['5'] || 0}`);
+    this.txt('stats', 'txt-w-easy', `${stats.wDiff['easy'] || 0}`);
+    this.txt('stats', 'txt-w-med', `${stats.wDiff['medium'] || 0}`);
+    this.txt('stats', 'txt-w-hard', `${stats.wDiff['hard'] || 0}`);
+    this.txt('stats', 'txt-achvs', `${stats.achvs.length}/${ACHVS.length}`);
+  }
+
   private showAchvNotify(id: string) {
     const a = ACHVS.find(x => x.id === id);
     if (a) {
       this.txt('hud', 'txt-notify', `Achievement: ${a.nm}!`);
-      // Clear after 3 seconds (approximate via future updates)
-      setTimeout(() => this.txt('hud', 'txt-notify', ''), 3000);
+      this.notifyTimer = 3.0; // Clear after 3 seconds via delta-time
+    }
+  }
+
+  private showChainCombo(count: number) {
+    this.chainCount = count;
+    if (count >= 2) {
+      this.txt('hud', 'txt-notify', `Chain x${count}!`);
+      this.chainTimer = 2.0;
     }
   }
 
   update(delta: number, _time: number) {
     this.kdb -= delta;
+
+    // Delta-time notification clearing (replaces setTimeout)
+    if (this.notifyTimer > 0) {
+      this.notifyTimer -= delta;
+      if (this.notifyTimer <= 0) {
+        this.notifyTimer = 0;
+        // Only clear if chain timer isn't also active
+        if (this.chainTimer <= 0) {
+          this.txt('hud', 'txt-notify', '');
+        }
+      }
+    }
+
+    if (this.chainTimer > 0) {
+      this.chainTimer -= delta;
+      if (this.chainTimer <= 0) {
+        this.chainTimer = 0;
+        if (this.notifyTimer <= 0) {
+          this.txt('hud', 'txt-notify', '');
+        }
+      }
+    }
 
     // Pause with Escape or B button
     const kb = this.input.keyboard;

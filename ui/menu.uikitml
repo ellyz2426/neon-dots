@@ -15,5 +15,6 @@
     <text class="btn" name="btn-settings">Settings</text>
     <text class="btn" name="btn-tutorial">How to Play</text>
     <text class="btn" name="btn-achievements">Achievements</text>
+    <text class="btn" name="btn-stats">Statistics</text>
   </container>
 </panel>

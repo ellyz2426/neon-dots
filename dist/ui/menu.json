@@ -76,6 +76,18 @@
               "name": "btn-achievements"
             },
             "dataUid": "uid-8"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "Statistics"
+            ],
+            "properties": {
+              "class": "btn",
+              "name": "btn-stats"
+            },
+            "dataUid": "uid-9"
           }
         ],
         "properties": {
@@ -155,7 +167,7 @@
         "column": 0
       },
       "end": {
-        "line": 18,
+        "line": 19,
         "column": 8
       }
     },
@@ -215,7 +227,7 @@
         "column": 2
       },
       "end": {
-        "line": 17,
+        "line": 18,
         "column": 14
       }
     },
@@ -277,6 +289,16 @@
       "end": {
         "line": 16,
         "column": 65
+      }
+    },
+    "uid-9": {
+      "start": {
+        "line": 17,
+        "column": 4
+      },
+      "end": {
+        "line": 17,
+        "column": 56
       }
     }
   }

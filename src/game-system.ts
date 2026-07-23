@@ -87,12 +87,44 @@ export class GameSystem extends createSystem({
   private aiWasAhead = false;
   private cidx = 0;
   private kdb = 0;
+
+  /** Get the world position of a box center (for effects) */
+  getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
+    if (!this.bg) return null;
+    const { n } = this.st, half = (n - 1) / 2;
+    const SP = 0.35;
+    const x = (col + 0.5 - half) * SP;
+    const y = (half - row - 0.5) * SP;
+    return {
+      x: this.bg.position.x + x,
+      y: this.bg.position.y + y,
+      z: this.bg.position.z + 0.02,
+    };
+  }
+
+  /** Get the world position of a line center (for effects) */
+  getLineWorldPos(t: LT, row: number, col: number): { x: number; y: number; z: number } | null {
+    if (!this.bg) return null;
+    const { n } = this.st, half = (n - 1) / 2;
+    const SP = 0.35;
+    const isH = t === 'h';
+    const x = isH ? (col + 0.5 - half) * SP : (col - half) * SP;
+    const y = isH ? (half - row) * SP : (half - row - 0.5) * SP;
+    return {
+      x: this.bg.position.x + x,
+      y: this.bg.position.y + y,
+      z: this.bg.position.z + 0.02,
+    };
+  }
   onScore?: () => void;
   onOver?: (w: 'player' | 'ai' | 'draw') => void;
   onTurn?: () => void;
   onAchv?: (id: string) => void;
   onReady?: () => void;
   onTimer?: () => void;
+  onChain?: (count: number) => void;
+  onBoxComplete?: (row: number, col: number) => void;
+  onLinePlaced?: (t: LT, row: number, col: number) => void;
 
   init() {
     this.stats = loadStats();
@@ -194,6 +226,7 @@ export class GameSystem extends createSystem({
       (mesh.material as MeshStandardMaterial).emissiveIntensity = 0.9;
       (mesh.material as MeshStandardMaterial).opacity = 1.0;
     }
+    this.onLinePlaced?.(t, r, c);
 
     return this.chkBoxes(t, r, c, p);
   }
@@ -210,6 +243,7 @@ export class GameSystem extends createSystem({
       if (s.hL[br][bc] && s.hL[br + 1][bc] && s.vL[br][bc] && s.vL[br][bc + 1]) {
         s.bx[br][bc] = p; s.sc[p - 1]++; done++;
         this.mkBoxFill(br, bc, p);
+        this.onBoxComplete?.(br, bc);
       }
     }
     return done;
@@ -378,6 +412,8 @@ export class GameSystem extends createSystem({
     this.onScore?.();
 
     if (done > 0) {
+      // Track chain for current turn
+      this.onChain?.(done);
       if (done >= 3) {
         if (!this.stats.achvs.includes('chain3')) { this.stats.achvs.push('chain3'); this.onAchv?.('chain3'); }
         if (done >= 5 && !this.stats.achvs.includes('sweep5')) { this.stats.achvs.push('sweep5'); this.onAchv?.('sweep5'); }

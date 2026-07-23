@@ -1,13 +1,17 @@
 <panel>
   <style>
-    .root { flexDirection: column; alignItems: center; gap: 6; padding: 12; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
+    .root { flexDirection: column; alignItems: center; gap: 5; padding: 12; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
     .title { fontSize: 22; fontWeight: bold; color: #00ffff; }
     .count { fontSize: 12; color: #88aacc; }
-    .list { flexDirection: column; gap: 4; width: 340; }
+    .list { flexDirection: column; gap: 3; width: 340; }
     .arow { flexDirection: row; gap: 6; }
-    .aname { fontSize: 12; fontWeight: bold; color: #ffffff; width: 140; }
-    .adesc { fontSize: 11; color: #667788; }
-    .btn { fontSize: 16; color: #00ffff; backgroundColor: #00ffff22; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; marginTop: 4; }
+    .aname { fontSize: 11; fontWeight: bold; color: #ffffff; width: 130; }
+    .adesc { fontSize: 10; color: #667788; }
+    .nav { flexDirection: row; gap: 12; alignItems: center; marginTop: 4; }
+    .arrow { fontSize: 16; color: #00ffff; cursor: pointer; padding: 4; paddingLeft: 12; paddingRight: 12; backgroundColor: #00ffff22; borderRadius: 6; }
+    .arrow:hover { backgroundColor: #00ffff44; }
+    .page { fontSize: 12; color: #88aacc; }
+    .btn { fontSize: 14; color: #00ffff; backgroundColor: #00ffff22; padding: 6; paddingLeft: 24; paddingRight: 24; borderRadius: 8; cursor: pointer; textAlign: center; marginTop: 2; }
     .btn:hover { backgroundColor: #00ffff44; }
   </style>
   <container class="root">
@@ -24,6 +28,11 @@
       <container class="arow"><text class="aname" name="txt-a7-name">???</text><text class="adesc" name="txt-a7-desc">Locked</text></container>
       <container class="arow"><text class="aname" name="txt-a8-name">???</text><text class="adesc" name="txt-a8-desc">Locked</text></container>
       <container class="arow"><text class="aname" name="txt-a9-name">???</text><text class="adesc" name="txt-a9-desc">Locked</text></container>
+    </container>
+    <container class="nav">
+      <text class="arrow" name="btn-achv-prev">&lt;</text>
+      <text class="page" name="txt-achv-page">Page 1/2</text>
+      <text class="arrow" name="btn-achv-next">&gt;</text>
     </container>
     <text class="btn" name="btn-back">Back</text>
   </container>
