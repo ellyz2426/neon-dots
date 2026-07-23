@@ -120,7 +120,7 @@ const uiSystem = world.getSystem(UISystem)!;
 const audioSystem = world.getSystem(AudioSystem)!;
 const effectsSystem = world.getSystem(EffectsSystem)!;
 
-uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions });
+uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions, audio: audioSystem, effects: effectsSystem });
 
 // Wire audio into game callbacks
 const origOnScore = gameSystem.onScore;

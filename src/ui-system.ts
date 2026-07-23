@@ -9,6 +9,8 @@ import {
   InputComponent,
 } from '@iwsdk/core';
 import { GameSystem, ACHVS, COLORS, GRIDS, type GState } from './game-system.js';
+import { AudioSystem } from './audio-system.js';
+import { EffectsSystem } from './effects-system.js';
 
 type PanelKey = 'menu' | 'hud' | 'results' | 'settings' | 'pause' | 'achpanel' | 'tutorial' | 'stats';
 
@@ -33,6 +35,8 @@ export class UISystem extends createSystem({
   private modeIdx = 0;
   private modes: ('classic' | 'speed' | 'zen' | 'challenge')[] = ['classic', 'speed', 'zen', 'challenge'];
   private kdb = 0;
+  private audio!: AudioSystem;
+  private effects!: EffectsSystem;
 
   // Delta-time notification timer (replaces setTimeout)
   private notifyTimer = 0;
@@ -44,10 +48,15 @@ export class UISystem extends createSystem({
   private chainCount = 0;
   private chainTimer = 0;
 
-  setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]> }) {
+  // Elapsed time display
+  private elapsedDisplayTimer = 0;
+
+  setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]>; audio: AudioSystem; effects: EffectsSystem }) {
     this.game = r.game;
     this.panels = r.panels as Record<PanelKey, Entity>;
     this.positions = r.positions as Record<PanelKey, [number, number, number]>;
+    this.audio = r.audio;
+    this.effects = r.effects;
 
     // Wire game callbacks
     this.game.onScore = () => this.updHud();
@@ -163,6 +172,8 @@ export class UISystem extends createSystem({
     } else {
       this.txt('hud', 'txt-timer', `Moves: ${s.moves}`);
     }
+    // Undo hint for Zen mode
+    this.txt('hud', 'txt-undo', this.game.canUndo() ? '[Z] Undo' : '');
   }
 
   private updTimer() {
@@ -178,8 +189,24 @@ export class UISystem extends createSystem({
     this.txt('results', 'txt-title', titles[winner]);
     this.txt('results', 'txt-score', `${s.sc[0]} - ${s.sc[1]}`);
     this.txt('results', 'txt-moves', `Moves: ${s.moves}`);
-    const stats = this.game.stats;
-    this.txt('results', 'txt-record', `Record: ${stats.won}W / ${stats.played - stats.won}L`);
+
+    // Show elapsed time on results
+    const em = Math.floor(s.elapsed / 60);
+    const es = Math.floor(s.elapsed % 60);
+    this.txt('results', 'txt-record',
+      `${em}:${es.toString().padStart(2, '0')} | Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L`);
+
+    // Celebration or defeat effects
+    if (winner === 'player') {
+      this.effects.celebrate(s.ci);
+      this.audio.sfx('win');
+    } else if (winner === 'ai') {
+      this.effects.defeatDust(s.ci);
+      this.audio.sfx('lose');
+    } else {
+      this.audio.sfx('lose');
+    }
+
     this.showPanel('results');
   }
 
@@ -271,6 +298,18 @@ export class UISystem extends createSystem({
       }
     }
 
+    // Elapsed time display (update every second)
+    if (this.game.st.on && !this.game.st.over) {
+      this.elapsedDisplayTimer -= delta;
+      if (this.elapsedDisplayTimer <= 0) {
+        this.elapsedDisplayTimer = 1.0;
+        const el = this.game.st.elapsed;
+        const m = Math.floor(el / 60);
+        const s = Math.floor(el % 60);
+        this.txt('hud', 'txt-elapsed', `${m}:${s.toString().padStart(2, '0')}`);
+      }
+    }
+
     // Pause with Escape or B button
     const kb = this.input.keyboard;
     if (kb.getKeyDown('Escape') && this.game.st.on && !this.game.st.over) {
@@ -278,10 +317,25 @@ export class UISystem extends createSystem({
       this.showPanel('pause');
     }
 
+    // Undo with Z key (Zen mode only)
+    if (kb.getKeyDown('KeyZ') && this.game.canUndo()) {
+      this.game.undo();
+      this.audio.sfx('undo');
+      this.updHud();
+    }
+
     const rp = this.input.xr?.gamepads?.right;
     if (rp?.getButtonDown(InputComponent.B_Button) && this.game.st.on && !this.game.st.over) {
       this.game.st.on = false;
       this.showPanel('pause');
+    }
+
+    // XR undo with Y button on left controller
+    const lp = this.input.xr?.gamepads?.left;
+    if (lp?.getButtonDown(InputComponent.Y_Button) && this.game.canUndo()) {
+      this.game.undo();
+      this.audio.sfx('undo');
+      this.updHud();
     }
   }
 }

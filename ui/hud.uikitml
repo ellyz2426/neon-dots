@@ -9,16 +9,20 @@
     .turn { fontSize: 11; color: #88aacc; }
     .boxes { fontSize: 14; color: #aaccdd; }
     .timer { fontSize: 11; color: #88aacc; }
+    .elapsed { fontSize: 9; color: #667788; }
     .notify { fontSize: 10; color: #ffcc00; }
+    .undo { fontSize: 9; color: #44ff88; }
   </style>
   <container class="root">
     <container class="col">
       <text class="p1" name="txt-p1-score">You: 0</text>
       <text class="turn" name="txt-turn">Your Turn</text>
+      <text class="undo" name="txt-undo"></text>
     </container>
     <container class="col-c">
       <text class="boxes" name="txt-boxes">0/9</text>
       <text class="timer" name="txt-timer">Moves: 0</text>
+      <text class="elapsed" name="txt-elapsed"></text>
     </container>
     <container class="col-r">
       <text class="p2" name="txt-p2-score">AI: 0</text>

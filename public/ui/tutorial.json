@@ -142,6 +142,17 @@
                   "class": "text"
                 },
                 "dataUid": "uid-15"
+              },
+              {
+                "sourceTag": "text",
+                "type": "custom",
+                "children": [
+                  "Undo (Zen mode): Z key or Y button"
+                ],
+                "properties": {
+                  "class": "text"
+                },
+                "dataUid": "uid-16"
               }
             ],
             "properties": {
@@ -159,7 +170,7 @@
               "class": "btn",
               "name": "btn-back"
             },
-            "dataUid": "uid-16"
+            "dataUid": "uid-17"
           }
         ],
         "properties": {
@@ -237,7 +248,7 @@
         "column": 0
       },
       "end": {
-        "line": 27,
+        "line": 28,
         "column": 8
       }
     },
@@ -307,7 +318,7 @@
         "column": 2
       },
       "end": {
-        "line": 26,
+        "line": 27,
         "column": 14
       }
     },
@@ -327,7 +338,7 @@
         "column": 4
       },
       "end": {
-        "line": 24,
+        "line": 25,
         "column": 16
       }
     },
@@ -443,11 +454,21 @@
     },
     "uid-16": {
       "start": {
-        "line": 25,
+        "line": 24,
+        "column": 6
+      },
+      "end": {
+        "line": 24,
+        "column": 66
+      }
+    },
+    "uid-17": {
+      "start": {
+        "line": 26,
         "column": 4
       },
       "end": {
-        "line": 25,
+        "line": 26,
         "column": 49
       }
     }

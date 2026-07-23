@@ -22,6 +22,7 @@
       <text class="text">Keyboard: Arrows navigate, Space place</text>
       <text class="text">VR: Ray pointer + Trigger, Stick + A</text>
       <text class="text">Pause: Esc or B button</text>
+      <text class="text">Undo (Zen mode): Z key or Y button</text>
     </container>
     <text class="btn" name="btn-back">Back</text>
   </container>

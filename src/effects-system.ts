@@ -132,6 +132,75 @@ export class EffectsSystem extends createSystem({}) {
     }
   }
 
+  /** Victory celebration — big particle shower from above */
+  celebrate(colorIdx: number) {
+    const cs = COLORS[colorIdx];
+    const geo = new SphereGeometry(0.02, 8, 8);
+    const colors = [cs.p, cs.a, '#ffffff', '#ffcc00'];
+    for (let i = 0; i < 50; i++) {
+      const c = colors[i % colors.length];
+      const mat = new MeshStandardMaterial({
+        color: new Color(c),
+        emissive: new Color(c),
+        emissiveIntensity: 1.5,
+        transparent: true,
+        opacity: 1.0,
+      });
+      const m = new Mesh(geo, mat);
+      const x = (Math.random() - 0.5) * 3;
+      const y = 3 + Math.random() * 2;
+      const z = -2 + (Math.random() - 0.5) * 2;
+      m.position.set(x, y, z);
+      const s = 0.5 + Math.random() * 1.0;
+      m.scale.set(s, s, s);
+      this.group.add(m);
+      this.particles.push({
+        mesh: m,
+        vel: new Vector3(
+          (Math.random() - 0.5) * 1.5,
+          -1 - Math.random() * 2,
+          (Math.random() - 0.5) * 0.5,
+        ),
+        life: 2.0 + Math.random() * 1.5,
+        maxLife: 2.0 + Math.random() * 1.5,
+        startScale: s,
+      });
+    }
+  }
+
+  /** Defeat effect — subtle red/grey dust */
+  defeatDust(colorIdx: number) {
+    const geo = new BoxGeometry(0.015, 0.015, 0.015);
+    for (let i = 0; i < 20; i++) {
+      const c = i % 2 === 0 ? '#ff4444' : '#666666';
+      const mat = new MeshStandardMaterial({
+        color: new Color(c),
+        emissive: new Color(c),
+        emissiveIntensity: 0.6,
+        transparent: true,
+        opacity: 0.7,
+      });
+      const m = new Mesh(geo, mat);
+      m.position.set(
+        (Math.random() - 0.5) * 2,
+        1.0 + Math.random() * 0.5,
+        -2 + (Math.random() - 0.5) * 1.5,
+      );
+      this.group.add(m);
+      this.particles.push({
+        mesh: m,
+        vel: new Vector3(
+          (Math.random() - 0.5) * 0.5,
+          -0.3 - Math.random() * 0.3,
+          (Math.random() - 0.5) * 0.3,
+        ),
+        life: 1.5 + Math.random() * 0.5,
+        maxLife: 1.5 + Math.random() * 0.5,
+        startScale: 1,
+      });
+    }
+  }
+
   /** Register a mesh for continuous pulsing glow */
   addPulse(mesh: Mesh, speed: number = 2, minEm: number = 0.3, maxEm: number = 1.0) {
     this.pulses.push({ mesh, time: Math.random() * Math.PI * 2, speed, minEm, maxEm });

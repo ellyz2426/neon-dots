@@ -23,6 +23,12 @@ export interface GState {
   n: number; hL: P[][]; vL: P[][]; bx: P[][]; cur: 1 | 2;
   sc: [number, number]; total: number; over: boolean;
   mode: Mode; diff: Diff; ci: number; timer: number; moves: number; on: boolean;
+  elapsed: number;
+}
+
+export interface UndoEntry {
+  t: LT; r: number; c: number; p: P;
+  boxesFilled: { r: number; c: number }[];
 }
 
 export interface GStats {
@@ -87,6 +93,7 @@ export class GameSystem extends createSystem({
   private aiWasAhead = false;
   private cidx = 0;
   private kdb = 0;
+  private undoStack: UndoEntry[] = [];
 
   /** Get the world position of a box center (for effects) */
   getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
@@ -125,6 +132,7 @@ export class GameSystem extends createSystem({
   onChain?: (count: number) => void;
   onBoxComplete?: (row: number, col: number) => void;
   onLinePlaced?: (t: LT, row: number, col: number) => void;
+  onUndo?: () => void;
 
   init() {
     this.stats = loadStats();
@@ -138,13 +146,14 @@ export class GameSystem extends createSystem({
     for (let r = 0; r < n - 1; r++) bx.push(new Array(n - 1).fill(0));
     return { n, hL, vL, bx, cur: 1, sc: [0, 0], total: (n - 1) * (n - 1),
       over: false, mode, diff: mode === 'challenge' ? 'hard' : diff,
-      ci, timer: mode === 'speed' ? 90 : 0, moves: 0, on: false };
+      ci, timer: mode === 'speed' ? 90 : 0, moves: 0, on: false, elapsed: 0 };
   }
 
   start(n: number, mode: Mode, diff: Diff, ci: number) {
     this.st = this.mk(n, mode, diff, ci);
     this.st.on = true;
     this.aiDly = 0; this.aiWasAhead = false; this.cidx = 0;
+    this.undoStack = [];
     this.build();
     this.onScore?.(); this.onTurn?.(); this.onReady?.();
   }
@@ -228,12 +237,22 @@ export class GameSystem extends createSystem({
     }
     this.onLinePlaced?.(t, r, c);
 
-    return this.chkBoxes(t, r, c, p);
+    const boxesFilled = this.chkBoxes(t, r, c, p);
+
+    // Track undo for Zen mode (player moves only)
+    if (p === 1 && s.mode === 'zen') {
+      this.undoStack.push({ t, r, c, p, boxesFilled: this.lastFilledBoxes });
+    }
+
+    return boxesFilled;
   }
+
+  private lastFilledBoxes: { r: number; c: number }[] = [];
 
   private chkBoxes(t: LT, r: number, c: number, p: P): number {
     const s = this.st, n = s.n;
     let done = 0;
+    this.lastFilledBoxes = [];
     const checks: [number, number][] = [];
     if (t === 'h') { if (r > 0) checks.push([r - 1, c]); if (r < n - 1) checks.push([r, c]); }
     else { if (c > 0) checks.push([r, c - 1]); if (c < n - 1) checks.push([r, c]); }
@@ -242,12 +261,15 @@ export class GameSystem extends createSystem({
       if (s.bx[br][bc] !== 0) continue;
       if (s.hL[br][bc] && s.hL[br + 1][bc] && s.vL[br][bc] && s.vL[br][bc + 1]) {
         s.bx[br][bc] = p; s.sc[p - 1]++; done++;
+        this.lastFilledBoxes.push({ r: br, c: bc });
         this.mkBoxFill(br, bc, p);
         this.onBoxComplete?.(br, bc);
       }
     }
     return done;
   }
+
+  private boxFillMeshes = new Map<string, Mesh[]>();
 
   private mkBoxFill(row: number, col: number, p: P) {
     const { n, ci } = this.st, half = (n - 1) / 2, cs = COLORS[ci];
@@ -261,6 +283,56 @@ export class GameSystem extends createSystem({
     const mk = new Mesh(new SphereGeometry(0.018, 8, 8),
       new MeshStandardMaterial({ color: new Color(ec), emissive: new Color(ec), emissiveIntensity: 1.0 }));
     mk.position.set(x, y, 0.015); this.bg.add(mk);
+
+    const key = `${row}_${col}`;
+    this.boxFillMeshes.set(key, [fill, mk]);
+  }
+
+  /** Undo last player move (Zen mode only). Returns true if undo succeeded. */
+  undo(): boolean {
+    const s = this.st;
+    if (s.mode !== 'zen' || !s.on || s.over || this.undoStack.length === 0) return false;
+
+    const entry = this.undoStack.pop()!;
+    const cs = COLORS[s.ci];
+
+    // Undo boxes
+    for (const box of entry.boxesFilled) {
+      s.bx[box.r][box.c] = 0;
+      s.sc[entry.p - 1]--;
+      const meshes = this.boxFillMeshes.get(`${box.r}_${box.c}`);
+      if (meshes) {
+        for (const m of meshes) {
+          this.bg.remove(m);
+          m.geometry.dispose();
+          (m.material as MeshStandardMaterial).dispose();
+        }
+        this.boxFillMeshes.delete(`${box.r}_${box.c}`);
+      }
+    }
+
+    // Undo line
+    const arr = entry.t === 'h' ? s.hL : s.vL;
+    arr[entry.r][entry.c] = 0;
+    s.moves--;
+
+    // Reset line visual
+    const mesh = this.meshMap.get(`${entry.t}_${entry.r}_${entry.c}`);
+    if (mesh) {
+      (mesh.material as MeshStandardMaterial).color.set(cs.emp);
+      (mesh.material as MeshStandardMaterial).emissive.set(cs.emp);
+      (mesh.material as MeshStandardMaterial).emissiveIntensity = 0.3;
+      (mesh.material as MeshStandardMaterial).opacity = 0.35;
+    }
+
+    this.onScore?.();
+    this.updCursor();
+    this.onUndo?.();
+    return true;
+  }
+
+  canUndo(): boolean {
+    return this.st.mode === 'zen' && this.st.on && !this.st.over && this.undoStack.length > 0;
   }
 
   // AI
@@ -308,22 +380,98 @@ export class GameSystem extends createSystem({
     const d = this.st.diff;
     if (d === 'easy') return av[Math.floor(Math.random() * av.length)];
 
+    // Priority 1: Complete boxes (greedy — take the most boxes)
     const comp = av.filter(l => this.wouldComplete(l.t, l.r, l.c) > 0);
     if (comp.length) {
       comp.sort((a, b) => this.wouldComplete(b.t, b.r, b.c) - this.wouldComplete(a.t, a.r, a.c));
       return comp[0];
     }
 
+    // Priority 2: Avoid giving opponent boxes
     const safe = av.filter(l => !this.would3rd(l.t, l.r, l.c));
+
+    if (d === 'hard' && safe.length) {
+      // Hard AI: among safe moves, prefer those that don't open chains
+      // A "chain" is a connected sequence of boxes with 2 sides each
+      const scored = safe.map(l => {
+        // Prefer moves near the center of the board for strategic positioning
+        const { n } = this.st;
+        const half = (n - 1) / 2;
+        const isH = l.t === 'h';
+        const cx = isH ? l.c + 0.5 : l.c;
+        const cy = isH ? l.r : l.r + 0.5;
+        const dist = Math.abs(cx - half) + Math.abs(cy - half);
+        return { move: l, score: -dist }; // Lower distance = better
+      });
+      scored.sort((a, b) => b.score - a.score);
+      // Among top tier (within 0.5 of best), pick randomly
+      const best = scored[0].score;
+      const top = scored.filter(s => s.score >= best - 0.5);
+      return top[Math.floor(Math.random() * top.length)].move;
+    }
+
     if (safe.length) return safe[Math.floor(Math.random() * safe.length)];
 
-    av.sort((a, b) => this.wouldComplete(a.t, a.r, a.c) - this.wouldComplete(b.t, b.r, b.c));
+    // No safe moves — sacrifice the shortest chain (give up fewest boxes)
     if (d === 'hard') {
-      const min = this.wouldComplete(av[0].t, av[0].r, av[0].c);
-      const mins = av.filter(l => this.wouldComplete(l.t, l.r, l.c) === min);
-      return mins[Math.floor(Math.random() * mins.length)];
+      // Count how many boxes each move would give the opponent
+      const sacrifices = av.map(l => ({
+        move: l,
+        gives: this.countChainFrom(l.t, l.r, l.c),
+      }));
+      sacrifices.sort((a, b) => a.gives - b.gives);
+      const minGives = sacrifices[0].gives;
+      const best = sacrifices.filter(s => s.gives === minGives);
+      return best[Math.floor(Math.random() * best.length)].move;
     }
+
+    av.sort((a, b) => this.wouldComplete(a.t, a.r, a.c) - this.wouldComplete(b.t, b.r, b.c));
     return av[0];
+  }
+
+  /** Count how many boxes opponent would chain-capture if we place the 3rd side */
+  private countChainFrom(t: LT, r: number, c: number): number {
+    const s = this.st, n = s.n;
+    const checks: [number, number][] = [];
+    if (t === 'h') { if (r > 0) checks.push([r - 1, c]); if (r < n - 1) checks.push([r, c]); }
+    else { if (c > 0) checks.push([r, c - 1]); if (c < n - 1) checks.push([r, c]); }
+
+    let total = 0;
+    for (const [br, bc] of checks) {
+      if (s.bx[br][bc]) continue;
+      let sides = 0;
+      if (s.hL[br][bc]) sides++; if (s.hL[br + 1][bc]) sides++;
+      if (s.vL[br][bc]) sides++; if (s.vL[br][bc + 1]) sides++;
+      if (sides === 2) {
+        // This box would become 3-sided, opponent completes on next move
+        // and may chain into adjacent boxes
+        total += this.floodChain(br, bc, new Set());
+      }
+    }
+    return total;
+  }
+
+  /** Flood-fill count of chain-capturable boxes from a given box */
+  private floodChain(br: number, bc: number, visited: Set<string>): number {
+    const key = `${br}_${bc}`;
+    if (visited.has(key)) return 0;
+    visited.add(key);
+    const s = this.st, n = s.n;
+    if (br < 0 || br >= n - 1 || bc < 0 || bc >= n - 1) return 0;
+    if (s.bx[br][bc]) return 0;
+
+    let sides = 0;
+    if (s.hL[br][bc]) sides++; if (s.hL[br + 1][bc]) sides++;
+    if (s.vL[br][bc]) sides++; if (s.vL[br][bc + 1]) sides++;
+    if (sides < 2) return 0; // Not part of a chain
+
+    let count = 1;
+    // Check adjacent boxes
+    count += this.floodChain(br - 1, bc, visited);
+    count += this.floodChain(br + 1, bc, visited);
+    count += this.floodChain(br, bc - 1, visited);
+    count += this.floodChain(br, bc + 1, visited);
+    return count;
   }
 
   private doAi() {
@@ -432,6 +580,9 @@ export class GameSystem extends createSystem({
   update(delta: number, _time: number) {
     const s = this.st;
     if (!s.on || s.over) return;
+
+    // Track elapsed time
+    s.elapsed += delta;
 
     if (s.mode === 'speed') {
       s.timer -= delta;
