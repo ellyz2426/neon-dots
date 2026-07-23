@@ -1,0 +1,19 @@
+<panel>
+  <style>
+    .root { flexDirection: column; alignItems: center; justifyContent: center; gap: 12; padding: 20; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
+    .title { fontSize: 28; fontWeight: bold; color: #00ffff; }
+    .sub { fontSize: 12; color: #88aacc; }
+    .btn-main { fontSize: 18; fontWeight: bold; color: #000000; backgroundColor: #00ffff; padding: 10; paddingLeft: 40; paddingRight: 40; borderRadius: 8; cursor: pointer; textAlign: center; }
+    .btn-main:hover { backgroundColor: #33ffff; }
+    .btn { fontSize: 16; color: #00ffff; backgroundColor: #00ffff22; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; }
+    .btn:hover { backgroundColor: #00ffff44; }
+  </style>
+  <container class="root">
+    <text class="title">NEON DOTS</text>
+    <text class="sub">Dots and Boxes Strategy</text>
+    <text class="btn-main" name="btn-play">PLAY</text>
+    <text class="btn" name="btn-settings">Settings</text>
+    <text class="btn" name="btn-tutorial">How to Play</text>
+    <text class="btn" name="btn-achievements">Achievements</text>
+  </container>
+</panel>

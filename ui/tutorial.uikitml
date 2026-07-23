@@ -1,0 +1,28 @@
+<panel>
+  <style>
+    .root { flexDirection: column; alignItems: center; gap: 8; padding: 16; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
+    .title { fontSize: 22; fontWeight: bold; color: #00ffff; }
+    .content { flexDirection: column; gap: 6; width: 340; }
+    .section { fontSize: 14; fontWeight: bold; color: #ffffff; marginTop: 4; }
+    .text { fontSize: 12; color: #aaccdd; }
+    .btn { fontSize: 16; color: #00ffff; backgroundColor: #00ffff22; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; marginTop: 4; }
+    .btn:hover { backgroundColor: #00ffff44; }
+  </style>
+  <container class="root">
+    <text class="title">How to Play</text>
+    <container class="content">
+      <text class="section">Rules</text>
+      <text class="text">Take turns drawing lines between adjacent dots. Complete the 4th side of a box to claim it and earn an extra turn. Most boxes wins!</text>
+      <text class="section">Strategy Tips</text>
+      <text class="text">- Avoid placing the 3rd side of a box</text>
+      <text class="text">- Complete chains of adjacent boxes</text>
+      <text class="text">- Force your opponent to open boxes</text>
+      <text class="section">Controls</text>
+      <text class="text">Mouse: Click on lines to place them</text>
+      <text class="text">Keyboard: Arrows navigate, Space place</text>
+      <text class="text">VR: Ray pointer + Trigger, Stick + A</text>
+      <text class="text">Pause: Esc or B button</text>
+    </container>
+    <text class="btn" name="btn-back">Back</text>
+  </container>
+</panel>

@@ -1,0 +1,49 @@
+
+> neon-dots@1.0.0 dev:runtime
+> vite
+
+🚀 Generating initial UIKitML files for dev server...
+👁️  UIKitML file watcher started - monitoring for changes...
+
+  VITE v7.3.6  ready in 1610 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://198.19.0.2:5173/
+🖥️  IWSDK: Using SwiftShader (software rendering) — no GPU detected
+🗑️ UIKitML file unlink: ui/achpanel.uikitml
+🗑️ UIKitML file unlink: ui/hud.uikitml
+🗑️ UIKitML file unlink: ui/menu.uikitml
+🗑️ UIKitML file unlink: ui/pause.uikitml
+🗑️ UIKitML file unlink: ui/results.uikitml
+🗑️ UIKitML file unlink: ui/settings.uikitml
+🗑️ UIKitML file unlink: ui/tutorial.uikitml
+➕ UIKitML file add: ui/menu.uikitml
+➕ UIKitML file add: ui/hud.uikitml
+➕ UIKitML file add: ui/results.uikitml
+➕ UIKitML file add: ui/settings.uikitml
+➕ UIKitML file add: ui/achpanel.uikitml
+➕ UIKitML file add: ui/pause.uikitml
+➕ UIKitML file add: ui/tutorial.uikitml
+✅ UIKitML file recompiled: tutorial.uikitml
+[browser] [PanelUISystem] Error loading panel for entity 11: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[browser] [PanelUISystem] Error loading panel for entity 12: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[browser] [PanelUISystem] Error loading panel for entity 13: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[browser] [PanelUISystem] Error loading panel for entity 14: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[browser] [PanelUISystem] Error loading panel for entity 15: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[browser] [PanelUISystem] Error loading panel for entity 16: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+🥽 IWSDK Dev Summary (Development):
+  - Device: metaQuest3
+  - Runtime injected: 1120.1KB
+  - Activation mode: localhost
+  - AI: agent mode (WebSocket at /__iwer_mcp)
+  - Note: Runtime only activates on localhost/local networks
+
+
+🥽 IWSDK Dev Summary (Development):
+  - Device: metaQuest3
+  - Runtime injected: 1120.1KB
+  - Activation mode: localhost
+  - AI: agent mode (WebSocket at /__iwer_mcp)
+  - Note: Runtime only activates on localhost/local networks
+

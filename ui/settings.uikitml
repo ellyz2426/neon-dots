@@ -1,0 +1,41 @@
+<panel>
+  <style>
+    .root { flexDirection: column; alignItems: center; gap: 10; padding: 16; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
+    .title { fontSize: 22; fontWeight: bold; color: #00ffff; }
+    .row { flexDirection: row; alignItems: center; gap: 8; width: 300; }
+    .label { fontSize: 14; color: #88aacc; width: 80; }
+    .arrow { fontSize: 18; color: #00ffff; cursor: pointer; padding: 4; paddingLeft: 10; paddingRight: 10; backgroundColor: #00ffff22; borderRadius: 6; }
+    .arrow:hover { backgroundColor: #00ffff44; }
+    .val { fontSize: 14; color: #ffffff; width: 120; textAlign: center; }
+    .btn { fontSize: 16; color: #00ffff; backgroundColor: #00ffff22; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; marginTop: 8; }
+    .btn:hover { backgroundColor: #00ffff44; }
+  </style>
+  <container class="root">
+    <text class="title">Settings</text>
+    <container class="row">
+      <text class="label">Grid</text>
+      <text class="arrow" name="btn-grid-prev">&lt;</text>
+      <text class="val" name="txt-grid">3x3 Normal</text>
+      <text class="arrow" name="btn-grid-next">&gt;</text>
+    </container>
+    <container class="row">
+      <text class="label">Difficulty</text>
+      <text class="arrow" name="btn-diff-prev">&lt;</text>
+      <text class="val" name="txt-diff">Medium</text>
+      <text class="arrow" name="btn-diff-next">&gt;</text>
+    </container>
+    <container class="row">
+      <text class="label">Mode</text>
+      <text class="arrow" name="btn-mode-prev">&lt;</text>
+      <text class="val" name="txt-mode">Classic</text>
+      <text class="arrow" name="btn-mode-next">&gt;</text>
+    </container>
+    <container class="row">
+      <text class="label">Color</text>
+      <text class="arrow" name="btn-color-prev">&lt;</text>
+      <text class="val" name="txt-color">Cyan</text>
+      <text class="arrow" name="btn-color-next">&gt;</text>
+    </container>
+    <text class="btn" name="btn-back">Back</text>
+  </container>
+</panel>

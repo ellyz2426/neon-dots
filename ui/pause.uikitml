@@ -1,0 +1,17 @@
+<panel>
+  <style>
+    .root { flexDirection: column; alignItems: center; justifyContent: center; gap: 12; padding: 20; backgroundColor: #0a0f1aee; borderRadius: 16; borderColor: #00ffff44; borderWidth: 1; }
+    .title { fontSize: 22; fontWeight: bold; color: #00ffff; }
+    .btn-main { fontSize: 16; fontWeight: bold; color: #000000; backgroundColor: #00ffff; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; }
+    .btn { fontSize: 16; color: #00ffff; backgroundColor: #00ffff22; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; }
+    .btn:hover { backgroundColor: #00ffff44; }
+    .btn-quit { fontSize: 16; color: #ff6666; backgroundColor: #ff666622; padding: 8; paddingLeft: 30; paddingRight: 30; borderRadius: 8; cursor: pointer; textAlign: center; }
+    .btn-quit:hover { backgroundColor: #ff666644; }
+  </style>
+  <container class="root">
+    <text class="title">Paused</text>
+    <text class="btn-main" name="btn-resume">Resume</text>
+    <text class="btn" name="btn-restart">Restart</text>
+    <text class="btn-quit" name="btn-quit">Quit to Menu</text>
+  </container>
+</panel>
