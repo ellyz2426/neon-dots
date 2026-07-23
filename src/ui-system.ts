@@ -37,6 +37,7 @@ export class UISystem extends createSystem({
   private kdb = 0;
   private audio!: AudioSystem;
   private effects!: EffectsSystem;
+  private onThemeChange?: (colorIdx: number) => void;
 
   // Delta-time notification timer (replaces setTimeout)
   private notifyTimer = 0;
@@ -51,12 +52,13 @@ export class UISystem extends createSystem({
   // Elapsed time display
   private elapsedDisplayTimer = 0;
 
-  setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]>; audio: AudioSystem; effects: EffectsSystem }) {
+  setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]>; audio: AudioSystem; effects: EffectsSystem; onThemeChange?: (colorIdx: number) => void }) {
     this.game = r.game;
     this.panels = r.panels as Record<PanelKey, Entity>;
     this.positions = r.positions as Record<PanelKey, [number, number, number]>;
     this.audio = r.audio;
     this.effects = r.effects;
+    this.onThemeChange = r.onThemeChange;
 
     // Wire game callbacks
     this.game.onScore = () => this.updHud();
@@ -158,6 +160,7 @@ export class UISystem extends createSystem({
     this.chainCount = 0;
     this.chainTimer = 0;
     this.notifyTimer = 0;
+    this.onThemeChange?.(this.colorIdx);
     this.game.start(g.n, this.modes[this.modeIdx], diffs[this.diffIdx], this.colorIdx);
   }
 
@@ -172,6 +175,10 @@ export class UISystem extends createSystem({
     } else {
       this.txt('hud', 'txt-timer', `Moves: ${s.moves}`);
     }
+    // Mode and difficulty indicator
+    const modeNames: Record<string, string> = { classic: 'Classic', speed: 'Speed', zen: 'Zen', challenge: 'Challenge' };
+    const diffCaps: Record<string, string> = { easy: 'Easy', medium: 'Med', hard: 'Hard' };
+    this.txt('hud', 'txt-mode-info', `${modeNames[s.mode]} · ${diffCaps[s.diff]}`);
     // Undo hint for Zen mode
     this.txt('hud', 'txt-undo', this.game.canUndo() ? '[Z] Undo' : '');
   }

@@ -12,6 +12,7 @@
     .elapsed { fontSize: 9; color: #667788; }
     .notify { fontSize: 10; color: #ffcc00; }
     .undo { fontSize: 9; color: #44ff88; }
+    .mode-info { fontSize: 9; color: #667788; }
   </style>
   <container class="root">
     <container class="col">
@@ -23,6 +24,7 @@
       <text class="boxes" name="txt-boxes">0/9</text>
       <text class="timer" name="txt-timer">Moves: 0</text>
       <text class="elapsed" name="txt-elapsed"></text>
+      <text class="mode-info" name="txt-mode-info"></text>
     </container>
     <container class="col-r">
       <text class="p2" name="txt-p2-score">AI: 0</text>

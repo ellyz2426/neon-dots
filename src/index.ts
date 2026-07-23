@@ -13,7 +13,7 @@ import {
   Entity,
   Vector3,
 } from '@iwsdk/core';
-import { GameSystem } from './game-system.js';
+import { GameSystem, COLORS } from './game-system.js';
 import { UISystem } from './ui-system.js';
 import { AudioSystem } from './audio-system.js';
 import { EffectsSystem } from './effects-system.js';
@@ -66,6 +66,7 @@ for (let i = 0; i < 4; i++) {
 }
 
 // Pillars
+const pillarMeshes: Mesh[] = [];
 for (let i = 0; i < 4; i++) {
   const p = new Mesh(new CylinderGeometry(0.05, 0.05, 5, 8),
     new MeshStandardMaterial({ color: new Color('#00ffff'), emissive: new Color('#00ffff'), emissiveIntensity: 0.8, transparent: true, opacity: 0.6 }));
@@ -73,14 +74,41 @@ for (let i = 0; i < 4; i++) {
   const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
   p.position.x = Math.cos(a) * 7; p.position.z = Math.sin(a) * 7;
   scene.add(p);
+  pillarMeshes.push(p);
 }
 
 // Orbs
+const orbMeshes: Mesh[] = [];
 for (let i = 0; i < 6; i++) {
   const o = new Mesh(new SphereGeometry(0.08, 16, 16),
     new MeshStandardMaterial({ color: new Color('#00ffff'), emissive: new Color('#00ffff'), emissiveIntensity: 1.2, transparent: true, opacity: 0.5 }));
   o.position.set((Math.random() - 0.5) * 10, 1 + Math.random() * 3, (Math.random() - 0.5) * 10);
   scene.add(o);
+  orbMeshes.push(o);
+}
+
+// === Dynamic Environment Theming ===
+function applyEnvironmentTheme(colorIdx: number) {
+  const cs = COLORS[colorIdx];
+  const pc = new Color(cs.p);
+  const ac = new Color(cs.a);
+
+  // Update pillars to primary color
+  for (const p of pillarMeshes) {
+    (p.material as MeshStandardMaterial).color.copy(pc);
+    (p.material as MeshStandardMaterial).emissive.copy(pc);
+  }
+
+  // Update orbs to alternate between primary and accent
+  for (let i = 0; i < orbMeshes.length; i++) {
+    const c = i % 2 === 0 ? pc : ac;
+    (orbMeshes[i].material as MeshStandardMaterial).color.copy(c);
+    (orbMeshes[i].material as MeshStandardMaterial).emissive.copy(c);
+  }
+
+  // Update point lights
+  l1.color.copy(pc);
+  l2.color.copy(ac);
 }
 
 // === Panel Entities ===
@@ -120,7 +148,7 @@ const uiSystem = world.getSystem(UISystem)!;
 const audioSystem = world.getSystem(AudioSystem)!;
 const effectsSystem = world.getSystem(EffectsSystem)!;
 
-uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions, audio: audioSystem, effects: effectsSystem });
+uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions, audio: audioSystem, effects: effectsSystem, onThemeChange: applyEnvironmentTheme });
 
 // Wire audio into game callbacks
 const origOnScore = gameSystem.onScore;

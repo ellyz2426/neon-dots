@@ -71,7 +71,7 @@ export const ACHVS = [
   { id: 'challenger',    nm: 'Challenger',        ds: 'Win a Challenge game' },
 ];
 
-const SP = 0.35, DOT_R = 0.022, LW = 0.028, HIT_W = 0.055;
+export const SP = 0.35, DOT_R = 0.022, LW = 0.028, HIT_W = 0.055;
 
 function loadStats(): GStats {
   try { const r = localStorage.getItem('neon-dots-stats'); if (r) return JSON.parse(r); } catch {}
@@ -88,12 +88,14 @@ export class GameSystem extends createSystem({
   private ents: Entity[] = [];
   private infoMap = new Map<number, { t: LT; r: number; c: number }>();
   private meshMap = new Map<string, Mesh>();
+  private dotMeshes: Mesh[] = [];
   private pressed = new Set<number>();
   private aiDly = 0;
   private aiWasAhead = false;
   private cidx = 0;
   private kdb = 0;
   private undoStack: UndoEntry[] = [];
+  private boxFillAnims: { mesh: Mesh; mark: Mesh; t: number }[] = [];
 
   /** Get the world position of a box center (for effects) */
   getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
@@ -162,6 +164,7 @@ export class GameSystem extends createSystem({
     if (this.bg) this.world.scene.remove(this.bg);
     for (const e of this.ents) { if (e.object3D) e.object3D.position.set(0, -100, 0); }
     this.ents = []; this.infoMap.clear(); this.meshMap.clear();
+    this.dotMeshes = []; this.boxFillAnims = [];
 
     const { n, ci } = this.st;
     const cs = COLORS[ci], half = (n - 1) / 2;
@@ -186,6 +189,7 @@ export class GameSystem extends createSystem({
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const d = new Mesh(dg, new MeshStandardMaterial({ color: new Color(cs.dot), emissive: new Color(cs.dot), emissiveIntensity: 0.8 }));
       d.position.set((c - half) * SP, (half - r) * SP, 0.01); this.bg.add(d);
+      this.dotMeshes.push(d);
     }
 
     // Lines
@@ -278,14 +282,55 @@ export class GameSystem extends createSystem({
     const fc = p === 1 ? cs.pF : cs.aF, ec = p === 1 ? cs.p : cs.a;
     const fill = new Mesh(new BoxGeometry(sz, sz, 0.008),
       new MeshStandardMaterial({ color: new Color(fc), emissive: new Color(ec), emissiveIntensity: 0.5, transparent: true, opacity: 0.7 }));
-    fill.position.set(x, y, 0.005); this.bg.add(fill);
+    fill.position.set(x, y, 0.005);
+    fill.scale.set(0, 0, 1); // Start at 0 scale for animation
+    this.bg.add(fill);
 
     const mk = new Mesh(new SphereGeometry(0.018, 8, 8),
       new MeshStandardMaterial({ color: new Color(ec), emissive: new Color(ec), emissiveIntensity: 1.0 }));
-    mk.position.set(x, y, 0.015); this.bg.add(mk);
+    mk.position.set(x, y, 0.015);
+    mk.scale.set(0, 0, 0); // Start at 0 scale for animation
+    this.bg.add(mk);
+
+    // Add to animation queue
+    this.boxFillAnims.push({ mesh: fill, mark: mk, t: 0 });
 
     const key = `${row}_${col}`;
     this.boxFillMeshes.set(key, [fill, mk]);
+  }
+
+  /** Get dot meshes for external highlighting */
+  getDotMeshes(): Mesh[] { return this.dotMeshes; }
+
+  /** Check if a specific box position has 3 sides filled (completable) */
+  getCompletableBoxes(): { r: number; c: number }[] {
+    const s = this.st, n = s.n, result: { r: number; c: number }[] = [];
+    if (!s.on || s.over || s.cur !== 1) return result;
+    for (let r = 0; r < n - 1; r++) {
+      for (let c = 0; c < n - 1; c++) {
+        if (s.bx[r][c]) continue;
+        let sides = 0;
+        if (s.hL[r][c]) sides++;
+        if (s.hL[r + 1][c]) sides++;
+        if (s.vL[r][c]) sides++;
+        if (s.vL[r][c + 1]) sides++;
+        if (sides === 3) result.push({ r, c });
+      }
+    }
+    return result;
+  }
+
+  /** Get dots (row, col in dot grid) adjacent to completable boxes */
+  getHintDots(): Set<string> {
+    const completable = this.getCompletableBoxes();
+    const hints = new Set<string>();
+    for (const { r, c } of completable) {
+      hints.add(`${r}_${c}`);
+      hints.add(`${r}_${c + 1}`);
+      hints.add(`${r + 1}_${c}`);
+      hints.add(`${r + 1}_${c + 1}`);
+    }
+    return hints;
   }
 
   /** Undo last player move (Zen mode only). Returns true if undo succeeded. */
@@ -584,6 +629,48 @@ export class GameSystem extends createSystem({
     // Track elapsed time
     s.elapsed += delta;
 
+    // Animate box fills (scale up from 0 to 1)
+    for (let i = this.boxFillAnims.length - 1; i >= 0; i--) {
+      const a = this.boxFillAnims[i];
+      a.t += delta * 4; // complete in ~0.25s
+      if (a.t >= 1) {
+        a.mesh.scale.set(1, 1, 1);
+        a.mark.scale.set(1, 1, 1);
+        this.boxFillAnims.splice(i, 1);
+      } else {
+        // Ease-out bounce: overshoot then settle
+        const t = a.t;
+        const ease = t < 0.7 ? (t / 0.7) * 1.15 : 1.15 - (t - 0.7) / 0.3 * 0.15;
+        a.mesh.scale.set(ease, ease, 1);
+        a.mark.scale.set(ease, ease, ease);
+      }
+    }
+
+    // Strategic dot highlighting — pulse dots near completable boxes
+    const hints = this.getHintDots();
+    const n = s.n;
+    const cs = COLORS[s.ci];
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const idx = r * n + c;
+        const dm = this.dotMeshes[idx];
+        if (!dm) continue;
+        const mat = dm.material as MeshStandardMaterial;
+        if (hints.has(`${r}_${c}`)) {
+          // Pulse between 0.8 and 1.8 emissive intensity
+          const pulse = 1.3 + Math.sin(_time * 5) * 0.5;
+          mat.emissive.set(cs.p);
+          mat.emissiveIntensity = pulse;
+          const sc = 1.0 + Math.sin(_time * 5) * 0.15;
+          dm.scale.set(sc, sc, sc);
+        } else {
+          mat.emissive.set(cs.dot);
+          mat.emissiveIntensity = 0.8;
+          dm.scale.set(1, 1, 1);
+        }
+      }
+    }
+
     if (s.mode === 'speed') {
       s.timer -= delta;
       this.onTimer?.();
@@ -597,7 +684,7 @@ export class GameSystem extends createSystem({
     }
 
     // Hover
-    const cs = COLORS[s.ci];
+    const hcs = COLORS[s.ci];
     this.queries.lines.entities.forEach(e => {
       const inf = this.infoMap.get(e.index);
       if (!inf) return;
@@ -606,7 +693,7 @@ export class GameSystem extends createSystem({
       const m = this.meshMap.get(`${inf.t}_${inf.r}_${inf.c}`);
       if (!m) return;
       if (e.hasComponent(Hovered)) {
-        (m.material as MeshStandardMaterial).emissive.set(cs.p);
+        (m.material as MeshStandardMaterial).emissive.set(hcs.p);
         (m.material as MeshStandardMaterial).emissiveIntensity = 0.6;
         (m.material as MeshStandardMaterial).opacity = 0.65;
       } else {
@@ -614,7 +701,7 @@ export class GameSystem extends createSystem({
         const cl = av[this.cidx];
         const isC = cl && cl.t === inf.t && cl.r === inf.r && cl.c === inf.c;
         if (!isC) {
-          (m.material as MeshStandardMaterial).emissive.set(cs.emp);
+          (m.material as MeshStandardMaterial).emissive.set(hcs.emp);
           (m.material as MeshStandardMaterial).emissiveIntensity = 0.3;
           (m.material as MeshStandardMaterial).opacity = 0.35;
         }
