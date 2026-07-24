@@ -63,6 +63,9 @@ export class AudioSystem extends createSystem({}) {
   private sounds: Record<string, string> = {};
   private entities: Record<string, Entity> = {};
   private muted = false;
+  // Pre-generate pitch variants for variety
+  private variants: Record<string, string[]> = {};
+  private variantIdx: Record<string, number> = {};
 
   init() {
     // Restore mute state
@@ -99,10 +102,47 @@ export class AudioSystem extends createSystem({}) {
       ent.addComponent(AudioSource, { src, volume: 0.5, positional: false });
       this.entities[k] = ent;
     }
+
+    // Generate pitch variants for repeated sounds (place, box, turn, click)
+    const variantDefs: Record<string, { base: number; dur: number; vol: number; decay: number; count: number }> = {
+      place: { base: 800, dur: 0.1, vol: 0.5, decay: 20, count: 4 },
+      box:   { base: 1200, dur: 0.25, vol: 0.6, decay: 8, count: 4 },
+      turn:  { base: 400, dur: 0.08, vol: 0.3, decay: 25, count: 3 },
+      click: { base: 600, dur: 0.06, vol: 0.3, decay: 30, count: 3 },
+    };
+    for (const [name, def] of Object.entries(variantDefs)) {
+      const urls: string[] = [];
+      // Deterministic pitch offsets for variety without randomness
+      const offsets = [-0.08, -0.04, 0.04, 0.08];
+      for (let i = 0; i < def.count; i++) {
+        const pitch = def.base * (1 + offsets[i % offsets.length]);
+        const url = mkUrl(pitch, def.dur, def.vol, def.decay);
+        urls.push(url);
+        // Create entity for each variant
+        const grp = new Group();
+        grp.position.set(0, 1.5, -1);
+        this.world.scene.add(grp);
+        const ent = this.world.createTransformEntity(grp);
+        ent.addComponent(AudioSource, { src: url, volume: 0.5, positional: false });
+        this.entities[`${name}_v${i}`] = ent;
+      }
+      this.variants[name] = urls;
+      this.variantIdx[name] = 0;
+    }
   }
 
   sfx(name: string) {
     if (this.muted) return;
+    // Use pitch variants for supported sounds (round-robin)
+    if (this.variants[name]) {
+      const idx = this.variantIdx[name];
+      const ent = this.entities[`${name}_v${idx}`];
+      this.variantIdx[name] = (idx + 1) % this.variants[name].length;
+      if (ent) {
+        try { AudioUtils.play(ent); } catch {}
+        return;
+      }
+    }
     const ent = this.entities[name];
     if (ent) {
       try { AudioUtils.play(ent); } catch {}

@@ -150,6 +150,13 @@ const effectsSystem = world.getSystem(EffectsSystem)!;
 
 uiSystem.setRefs({ game: gameSystem, panels: panelEntities, positions: panelPositions, audio: audioSystem, effects: effectsSystem, onThemeChange: applyEnvironmentTheme });
 
+// Pass board group ref to effects system for board shake
+const origOnReady = gameSystem.onReady;
+gameSystem.onReady = () => {
+  origOnReady?.();
+  effectsSystem.setBoardGroup(gameSystem.getBoardGroup());
+};
+
 // Wire audio into game callbacks
 const origOnScore = gameSystem.onScore;
 gameSystem.onScore = () => { origOnScore?.(); audioSystem.sfx('place'); };
@@ -159,6 +166,7 @@ gameSystem.onBoxComplete = (row: number, col: number) => {
   const pos = gameSystem.getBoxWorldPos(row, col);
   if (pos) {
     effectsSystem.burst(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci, 14);
+    effectsSystem.scoreFlash(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci);
     audioSystem.sfx('box');
   }
 };
@@ -167,6 +175,15 @@ gameSystem.onLinePlaced = (_t, row, col) => {
   const pos = gameSystem.getLineWorldPos(_t, row, col);
   if (pos) {
     effectsSystem.lineBurst(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci);
+  }
+};
+
+// Board shake on chain completions (2+ boxes in one turn)
+const origOnChain = gameSystem.onChain;
+gameSystem.onChain = (count: number) => {
+  origOnChain?.(count);
+  if (count >= 2) {
+    effectsSystem.shakeBoard(0.005 + count * 0.003, 0.2 + count * 0.05);
   }
 };
 

@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
   "workspaceRoot": "/home/hatch/workspace/neon-dots",
-  "pid": 15073,
+  "pid": 9877,
   "command": "npm",
   "args": [
     "run",
     "dev:runtime"
   ],
-  "logPath": "/home/hatch/workspace/neon-dots/.iwsdk/runtime/logs/dev-1784854903861.log",
+  "logPath": "/home/hatch/workspace/neon-dots/.iwsdk/runtime/logs/dev-1784858716956.log",
   "scriptName": "dev:runtime",
   "port": 5173,
   "openBrowser": false,
-  "createdAt": "2026-07-24T01:01:50.778Z"
+  "createdAt": "2026-07-24T02:05:20.999Z"
 }

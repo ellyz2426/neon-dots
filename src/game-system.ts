@@ -106,8 +106,12 @@ export class GameSystem extends createSystem({
   private scoreBarBg!: Mesh;
   private borderMesh!: Mesh;
   private borderPulseT = 0;
+  private lineGrowAnims: { mesh: Mesh; t: number; isH: boolean }[] = [];
   totalChains = 0;
   totalChainBoxes = 0;
+
+  /** Get the board group for external effects (e.g. shake) */
+  getBoardGroup(): Group { return this.bg; }
 
   /** Get the world position of a box center (for effects) */
   getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
@@ -397,6 +401,11 @@ export class GameSystem extends createSystem({
       (mesh.material as MeshStandardMaterial).emissive.set(cl);
       (mesh.material as MeshStandardMaterial).emissiveIntensity = 0.9;
       (mesh.material as MeshStandardMaterial).opacity = 1.0;
+      // Start line grow animation — scale from 0 on primary axis
+      const isH = t === 'h';
+      if (isH) mesh.scale.x = 0.05;
+      else mesh.scale.y = 0.05;
+      this.lineGrowAnims.push({ mesh, t: 0, isH });
     }
     this.onLinePlaced?.(t, r, c);
     this.lastMoveKey = `${t}_${r}_${c}`;
@@ -847,6 +856,23 @@ export class GameSystem extends createSystem({
         const ease = t < 0.7 ? (t / 0.7) * 1.15 : 1.15 - (t - 0.7) / 0.3 * 0.15;
         a.mesh.scale.set(ease, ease, 1);
         a.mark.scale.set(ease, ease, ease);
+      }
+    }
+
+    // Animate line grow (scale from 0 to 1 on primary axis)
+    for (let i = this.lineGrowAnims.length - 1; i >= 0; i--) {
+      const lg = this.lineGrowAnims[i];
+      lg.t += delta * 8; // complete in ~0.125s — snappy
+      if (lg.t >= 1) {
+        if (lg.isH) lg.mesh.scale.x = 1;
+        else lg.mesh.scale.y = 1;
+        this.lineGrowAnims.splice(i, 1);
+      } else {
+        // Ease-out with slight overshoot
+        const t = lg.t;
+        const ease = t < 0.8 ? (t / 0.8) * 1.08 : 1.08 - (t - 0.8) / 0.2 * 0.08;
+        if (lg.isH) lg.mesh.scale.x = ease;
+        else lg.mesh.scale.y = ease;
       }
     }
 

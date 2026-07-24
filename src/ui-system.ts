@@ -250,14 +250,15 @@ export class UISystem extends createSystem({
     this.txt('results', 'txt-record',
       `Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L${streakTxt}`);
 
-    // Celebration or defeat effects
+    // Celebration or defeat or draw effects
     if (winner === 'player') {
       this.effects.celebrate(s.ci);
       this.audio.sfx('win');
-    } else if (winner === 'ai') {
-      this.effects.defeatDust(s.ci);
-      this.audio.sfx('lose');
+    } else if (winner === 'draw') {
+      this.effects.drawShimmer(s.ci);
+      this.audio.sfx('click');
     } else {
+      this.effects.defeatDust(s.ci);
       this.audio.sfx('lose');
     }
 

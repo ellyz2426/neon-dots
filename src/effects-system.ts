@@ -26,6 +26,21 @@ interface PulseObj {
   maxEm: number;
 }
 
+interface ScoreFlash {
+  ring: Mesh;
+  pip: Mesh;
+  life: number;
+  startY: number;
+}
+
+interface BoardShake {
+  intensity: number;
+  duration: number;
+  elapsed: number;
+  origX: number;
+  origY: number;
+}
+
 export class EffectsSystem extends createSystem({}) {
   private particles: Particle[] = [];
   private pulses: PulseObj[] = [];
@@ -34,6 +49,9 @@ export class EffectsSystem extends createSystem({}) {
   private aiPulseActive = false;
   private aiPulseT = 0;
   private aiPulseMeshes: Mesh[] = [];
+  private scoreFlashes: ScoreFlash[] = [];
+  private boardShake: BoardShake | null = null;
+  private boardGroup: Group | null = null;
 
   init() {
     this.group = new Group();
@@ -215,6 +233,102 @@ export class EffectsSystem extends createSystem({}) {
     if (active) this.aiPulseT = 0;
   }
 
+  /** Score flash indicator — expanding ring + pip floating upward at box center */
+  scoreFlash(worldPos: Vector3, colorIdx: number, count: number = 1) {
+    const cs = COLORS[colorIdx];
+    // Expanding ring
+    const ringGeo = new SphereGeometry(0.04, 12, 12);
+    const ringMat = new MeshStandardMaterial({
+      color: new Color(cs.p),
+      emissive: new Color(cs.p),
+      emissiveIntensity: 2.0,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const ring = new Mesh(ringGeo, ringMat);
+    ring.position.copy(worldPos);
+    ring.position.z += 0.03;
+    this.group.add(ring);
+
+    // Bright pip that floats up
+    const pipGeo = new SphereGeometry(0.012, 8, 8);
+    const pipColor = count >= 2 ? '#ffcc00' : cs.p;
+    const pipMat = new MeshStandardMaterial({
+      color: new Color(pipColor),
+      emissive: new Color(pipColor),
+      emissiveIntensity: 2.5,
+      transparent: true,
+      opacity: 1.0,
+    });
+    const pip = new Mesh(pipGeo, pipMat);
+    pip.position.copy(worldPos);
+    pip.position.z += 0.04;
+    // Scale pip by count for multi-box chains
+    const ps = 0.8 + count * 0.4;
+    pip.scale.set(ps, ps, ps);
+    this.group.add(pip);
+
+    this.scoreFlashes.push({
+      ring, pip,
+      life: 0.7,
+      startY: worldPos.y,
+    });
+  }
+
+  /** Draw-specific effect — neutral golden shimmer */
+  drawShimmer(colorIdx: number) {
+    const geo = new SphereGeometry(0.015, 8, 8);
+    const colors = ['#ffcc00', '#ccaa44', '#ffffff', '#aabb88'];
+    for (let i = 0; i < 30; i++) {
+      const c = colors[i % colors.length];
+      const mat = new MeshStandardMaterial({
+        color: new Color(c),
+        emissive: new Color(c),
+        emissiveIntensity: 1.0,
+        transparent: true,
+        opacity: 0.8,
+      });
+      const m = new Mesh(geo, mat);
+      const angle = (i / 30) * Math.PI * 2;
+      const radius = 0.8 + Math.random() * 0.5;
+      m.position.set(
+        Math.cos(angle) * radius,
+        1.3 + (Math.random() - 0.5) * 0.6,
+        -2 + Math.sin(angle) * radius * 0.4,
+      );
+      const s = 0.4 + Math.random() * 0.8;
+      m.scale.set(s, s, s);
+      this.group.add(m);
+      this.particles.push({
+        mesh: m,
+        vel: new Vector3(
+          Math.cos(angle) * 0.3,
+          0.3 + Math.random() * 0.5,
+          Math.sin(angle) * 0.2,
+        ),
+        life: 1.5 + Math.random() * 0.8,
+        maxLife: 1.5 + Math.random() * 0.8,
+        startScale: s,
+      });
+    }
+  }
+
+  /** Board shake — register a shake on the board group ref */
+  setBoardGroup(bg: Group) {
+    this.boardGroup = bg;
+  }
+
+  shakeBoard(intensity: number = 0.008, duration: number = 0.3) {
+    if (!this.boardGroup) return;
+    this.boardShake = {
+      intensity,
+      duration,
+      elapsed: 0,
+      origX: this.boardGroup.position.x,
+      origY: this.boardGroup.position.y,
+    };
+  }
+
   update(delta: number, time: number) {
     // Animate particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
@@ -258,6 +372,47 @@ export class EffectsSystem extends createSystem({}) {
         (ap.mesh.material as MeshStandardMaterial).emissiveIntensity = 1.2 + Math.sin(ap.phase * 2) * 0.6;
       } else {
         (ap.mesh.material as MeshStandardMaterial).emissiveIntensity = 0.8;
+      }
+    }
+
+    // Animate score flashes
+    for (let i = this.scoreFlashes.length - 1; i >= 0; i--) {
+      const sf = this.scoreFlashes[i];
+      sf.life -= delta;
+      if (sf.life <= 0) {
+        this.group.remove(sf.ring);
+        this.group.remove(sf.pip);
+        sf.ring.geometry.dispose();
+        (sf.ring.material as MeshStandardMaterial).dispose();
+        sf.pip.geometry.dispose();
+        (sf.pip.material as MeshStandardMaterial).dispose();
+        this.scoreFlashes.splice(i, 1);
+        continue;
+      }
+      const t = sf.life / 0.7; // normalized remaining
+      // Ring expands and fades
+      const ringScale = 1 + (1 - t) * 3;
+      sf.ring.scale.set(ringScale, ringScale, ringScale);
+      (sf.ring.material as MeshStandardMaterial).opacity = t * 0.7;
+      (sf.ring.material as MeshStandardMaterial).emissiveIntensity = t * 2.0;
+      // Pip floats upward and fades
+      sf.pip.position.y = sf.startY + (1 - t) * 0.25;
+      (sf.pip.material as MeshStandardMaterial).opacity = Math.min(1, t * 1.5);
+    }
+
+    // Board shake
+    if (this.boardShake && this.boardGroup) {
+      this.boardShake.elapsed += delta;
+      const t = this.boardShake.elapsed / this.boardShake.duration;
+      if (t >= 1) {
+        this.boardGroup.position.x = this.boardShake.origX;
+        this.boardGroup.position.y = this.boardShake.origY;
+        this.boardShake = null;
+      } else {
+        const decay = 1 - t;
+        const intensity = this.boardShake.intensity * decay;
+        this.boardGroup.position.x = this.boardShake.origX + (Math.random() - 0.5) * 2 * intensity;
+        this.boardGroup.position.y = this.boardShake.origY + (Math.random() - 0.5) * 2 * intensity;
       }
     }
   }
