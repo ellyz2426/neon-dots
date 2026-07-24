@@ -226,19 +226,29 @@ export class UISystem extends createSystem({
       : { player: 'You Win!', ai: 'AI Wins!', draw: 'Draw!' };
     this.txt('results', 'txt-title', titles[winner]);
     this.txt('results', 'txt-score', `${s.sc[0]} - ${s.sc[1]}`);
-    this.txt('results', 'txt-moves', `Moves: ${s.moves}`);
 
     // Star rating
     const stars = this.calcStars(winner);
     const starStr = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '';
     this.txt('results', 'txt-stars', starStr);
 
-    // Show elapsed time on results
+    // Stats row: moves, time, chains, efficiency
+    this.txt('results', 'txt-moves-val', `${s.moves}`);
+
     const em = Math.floor(s.elapsed / 60);
     const es = Math.floor(s.elapsed % 60);
+    this.txt('results', 'txt-time-val', `${em}:${es.toString().padStart(2, '0')}`);
+
+    this.txt('results', 'txt-chains-val', `${this.game.totalChains}`);
+
+    // Efficiency: boxes per move (higher = better)
+    const eff = s.moves > 0 ? (s.sc[0] / s.moves * 100).toFixed(0) : '0';
+    this.txt('results', 'txt-efficiency-val', `${eff}%`);
+
+    // Record line
     const streakTxt = !is2p && this.game.stats.streak > 1 ? ` | Streak: ${this.game.stats.streak}` : '';
     this.txt('results', 'txt-record',
-      `${em}:${es.toString().padStart(2, '0')} | Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L${streakTxt}`);
+      `Record: ${this.game.stats.won}W / ${this.game.stats.played - this.game.stats.won}L${streakTxt}`);
 
     // Celebration or defeat effects
     if (winner === 'player') {

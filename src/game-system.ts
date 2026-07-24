@@ -100,6 +100,14 @@ export class GameSystem extends createSystem({
   private boardEntranceT = -1;
   private lastMoveKey = '';
   private lastMoveFade = 0;
+  private hoverPreviewMeshes: Mesh[] = [];
+  private scoreBarP1!: Mesh;
+  private scoreBarP2!: Mesh;
+  private scoreBarBg!: Mesh;
+  private borderMesh!: Mesh;
+  private borderPulseT = 0;
+  totalChains = 0;
+  totalChainBoxes = 0;
 
   /** Get the world position of a box center (for effects) */
   getBoxWorldPos(row: number, col: number): { x: number; y: number; z: number } | null {
@@ -162,6 +170,8 @@ export class GameSystem extends createSystem({
     this.st.on = true;
     this.aiDly = 0; this.aiWasAhead = false; this.cidx = 0;
     this.undoStack = [];
+    this.totalChains = 0;
+    this.totalChainBoxes = 0;
     this.build();
 
     // Challenge mode: pre-place random lines to create a mid-game position
@@ -250,7 +260,26 @@ export class GameSystem extends createSystem({
     for (let r = 0; r < n; r++) for (let c = 0; c < n - 1; c++) this.mkLine('h', r, c, half, cs);
     for (let r = 0; r < n - 1; r++) for (let c = 0; c < n; c++) this.mkLine('v', r, c, half, cs);
 
+    // Score ratio bar below the board
+    const barW = sz * 0.8, barH = 0.025;
+    const barY = -(sz / 2) - 0.06;
+    this.scoreBarBg = new Mesh(new BoxGeometry(barW, barH, 0.006),
+      new MeshStandardMaterial({ color: new Color('#111822'), emissive: new Color('#111822'), emissiveIntensity: 0.2 }));
+    this.scoreBarBg.position.set(0, barY, 0.01); this.bg.add(this.scoreBarBg);
+
+    this.scoreBarP1 = new Mesh(new BoxGeometry(0.001, barH, 0.008),
+      new MeshStandardMaterial({ color: new Color(cs.p), emissive: new Color(cs.p), emissiveIntensity: 0.8 }));
+    this.scoreBarP1.position.set(-barW / 2, barY, 0.012); this.bg.add(this.scoreBarP1);
+
+    this.scoreBarP2 = new Mesh(new BoxGeometry(0.001, barH, 0.008),
+      new MeshStandardMaterial({ color: new Color(cs.a), emissive: new Color(cs.a), emissiveIntensity: 0.8 }));
+    this.scoreBarP2.position.set(barW / 2, barY, 0.012); this.bg.add(this.scoreBarP2);
+
+    // Save border mesh for pulse effects
+    this.borderMesh = bd;
+
     this.updCursor();
+    this.updScoreBar();
     // Board entrance animation — start tiny, scale up
     this.bg.scale.set(0.01, 0.01, 0.01);
     this.boardEntranceT = 0;
@@ -281,6 +310,79 @@ export class GameSystem extends createSystem({
     this.infoMap.set(ent.index, { t, r: row, c: col });
   }
 
+  /** Update score ratio bar */
+  updScoreBar() {
+    const s = this.st;
+    if (!this.scoreBarBg) return;
+    const bgGeo = this.scoreBarBg.geometry as BoxGeometry;
+    const barW = bgGeo.parameters.width;
+    const barY = this.scoreBarBg.position.y;
+    const total = Math.max(1, s.total);
+    const p1Ratio = s.sc[0] / total;
+    const p2Ratio = s.sc[1] / total;
+    const cs = COLORS[s.ci];
+
+    // P1 bar grows from left
+    const p1W = Math.max(0.001, barW * p1Ratio);
+    this.scoreBarP1.scale.x = p1W / 0.001;
+    this.scoreBarP1.position.x = -barW / 2 + p1W / 2;
+
+    // P2 bar grows from right
+    const p2W = Math.max(0.001, barW * p2Ratio);
+    this.scoreBarP2.scale.x = p2W / 0.001;
+    this.scoreBarP2.position.x = barW / 2 - p2W / 2;
+  }
+
+  /** Show preview highlights on boxes that would complete if a line is placed */
+  showHoverPreview(t: LT, r: number, c: number) {
+    this.clearHoverPreview();
+    const s = this.st, n = s.n;
+    if (s.over || !s.on) return;
+    const arr = t === 'h' ? s.hL : s.vL;
+    if (arr[r][c]) return;
+
+    const checks: [number, number][] = [];
+    if (t === 'h') { if (r > 0) checks.push([r - 1, c]); if (r < n - 1) checks.push([r, c]); }
+    else { if (c > 0) checks.push([r, c - 1]); if (c < n - 1) checks.push([r, c]); }
+
+    const cs = COLORS[s.ci];
+    const half = (n - 1) / 2;
+    for (const [br, bc] of checks) {
+      if (s.bx[br][bc]) continue;
+      let sides = 0;
+      if (s.hL[br][bc]) sides++; if (s.hL[br + 1][bc]) sides++;
+      if (s.vL[br][bc]) sides++; if (s.vL[br][bc + 1]) sides++;
+      if (sides === 3) {
+        // This box would complete — show preview
+        const x = (bc + 0.5 - half) * SP, y = (half - br - 0.5) * SP;
+        const sz = SP * 0.75;
+        const preview = new Mesh(new BoxGeometry(sz, sz, 0.007),
+          new MeshStandardMaterial({
+            color: new Color(cs.p), emissive: new Color(cs.p),
+            emissiveIntensity: 0.4, transparent: true, opacity: 0.25,
+          }));
+        preview.position.set(x, y, 0.004);
+        this.bg.add(preview);
+        this.hoverPreviewMeshes.push(preview);
+      }
+    }
+  }
+
+  /** Clear hover preview meshes */
+  clearHoverPreview() {
+    for (const m of this.hoverPreviewMeshes) {
+      this.bg.remove(m);
+      m.geometry.dispose();
+      (m.material as MeshStandardMaterial).dispose();
+    }
+    this.hoverPreviewMeshes = [];
+  }
+
+  /** Trigger border pulse */
+  pulseBorder() {
+    this.borderPulseT = 1.0;
+  }
+
   place(t: LT, r: number, c: number, p: P): number {
     const s = this.st;
     const arr = t === 'h' ? s.hL : s.vL;
@@ -301,6 +403,15 @@ export class GameSystem extends createSystem({
     this.lastMoveFade = 1.0;
 
     const boxesFilled = this.chkBoxes(t, r, c, p);
+
+    // Update score bar after placement
+    if (boxesFilled > 0) {
+      this.updScoreBar();
+      this.totalChains++;
+      this.totalChainBoxes += boxesFilled;
+    }
+    // Clear hover preview after placing
+    this.clearHoverPreview();
 
     // Track undo for Zen mode (player moves only)
     if (p === 1 && s.mode === 'zen') {
@@ -587,7 +698,7 @@ export class GameSystem extends createSystem({
       if (this.isDone()) { this.end(); return; }
       this.aiDly = 0.4;
     } else {
-      this.st.cur = 1; this.onTurn?.(); this.updCursor();
+      this.st.cur = 1; this.onTurn?.(); this.updCursor(); this.pulseBorder();
     }
   }
 
@@ -687,7 +798,7 @@ export class GameSystem extends createSystem({
         s.cur = s.cur === 1 ? 2 : 1;
         this.onTurn?.(); this.updCursor();
       } else {
-        s.cur = 2; this.aiDly = 0.6; this.onTurn?.();
+        s.cur = 2; this.aiDly = 0.6; this.onTurn?.(); this.pulseBorder();
       }
     }
   }
@@ -739,6 +850,27 @@ export class GameSystem extends createSystem({
       }
     }
 
+    // Border pulse animation
+    if (this.borderPulseT > 0) {
+      this.borderPulseT -= delta * 2.5;
+      if (this.borderPulseT < 0) this.borderPulseT = 0;
+      const bm = this.borderMesh;
+      if (bm) {
+        const intensity = 0.4 + this.borderPulseT * 0.8;
+        const opacity = 0.3 + this.borderPulseT * 0.4;
+        (bm.material as MeshStandardMaterial).emissiveIntensity = intensity;
+        (bm.material as MeshStandardMaterial).opacity = opacity;
+      }
+    }
+
+    // Hover preview — animate preview meshes pulsing
+    if (this.hoverPreviewMeshes.length > 0) {
+      const pulse = 0.2 + Math.sin(_time * 6) * 0.1;
+      for (const m of this.hoverPreviewMeshes) {
+        (m.material as MeshStandardMaterial).opacity = pulse;
+      }
+    }
+
     // Strategic dot highlighting — pulse dots near completable boxes
     const hints = this.getHintDots();
     const n = s.n;
@@ -781,6 +913,7 @@ export class GameSystem extends createSystem({
     // Hover
     const hcs = COLORS[s.ci];
     const hoverClr = (s.mode === '2player' && s.cur === 2) ? hcs.a : hcs.p;
+    let anyHovered = false;
     this.queries.lines.entities.forEach(e => {
       const inf = this.infoMap.get(e.index);
       if (!inf) return;
@@ -792,6 +925,9 @@ export class GameSystem extends createSystem({
         (m.material as MeshStandardMaterial).emissive.set(hoverClr);
         (m.material as MeshStandardMaterial).emissiveIntensity = 0.6;
         (m.material as MeshStandardMaterial).opacity = 0.65;
+        // Show completion preview for hovered line
+        this.showHoverPreview(inf.t, inf.r, inf.c);
+        anyHovered = true;
       } else {
         const av = this.avail();
         const cl = av[this.cidx];
@@ -803,6 +939,7 @@ export class GameSystem extends createSystem({
         }
       }
     });
+    if (!anyHovered) this.clearHoverPreview();
 
     // Click
     const cp = new Set<number>();

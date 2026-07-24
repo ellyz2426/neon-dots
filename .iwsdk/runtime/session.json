@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "sessionId": "7ab30eac-6401-4d38-a9d2-0ad6196a075d",
+  "workspaceRoot": "/home/hatch/workspace/neon-dots",
+  "pid": 15073,
+  "port": 5173,
+  "localUrl": "http://localhost:5173/",
+  "networkUrls": [
+    "http://198.19.0.2:5173/"
+  ],
+  "aiMode": "agent",
+  "browser": {
+    "status": "connected",
+    "connected": true,
+    "commandReady": true,
+    "connectedClientCount": 1,
+    "lastTransitionAt": "2026-07-24T01:02:04.808Z",
+    "lastBridgeConnectedAt": "2026-07-24T01:01:50.721Z",
+    "lastCommandReadyAt": "2026-07-24T01:02:04.808Z"
+  },
+  "registeredAt": "2026-07-24T01:01:46.115Z",
+  "updatedAt": "2026-07-24T01:02:04.815Z"
+}
