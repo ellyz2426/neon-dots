@@ -1,0 +1,305 @@
+{
+  "element": {
+    "sourceTag": "panel",
+    "type": "custom",
+    "children": [
+      {
+        "sourceTag": "container",
+        "type": "custom",
+        "children": [
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "NEON DOTS"
+            ],
+            "properties": {
+              "class": "title"
+            },
+            "dataUid": "uid-3"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "Dots and Boxes Strategy"
+            ],
+            "properties": {
+              "class": "sub"
+            },
+            "dataUid": "uid-4"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "PLAY"
+            ],
+            "properties": {
+              "class": "btn-main",
+              "name": "btn-play"
+            },
+            "dataUid": "uid-5"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "Settings"
+            ],
+            "properties": {
+              "class": "btn",
+              "name": "btn-settings"
+            },
+            "dataUid": "uid-6"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "How to Play"
+            ],
+            "properties": {
+              "class": "btn",
+              "name": "btn-tutorial"
+            },
+            "dataUid": "uid-7"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "Achievements"
+            ],
+            "properties": {
+              "class": "btn",
+              "name": "btn-achievements"
+            },
+            "dataUid": "uid-8"
+          },
+          {
+            "sourceTag": "text",
+            "type": "custom",
+            "children": [
+              "Statistics"
+            ],
+            "properties": {
+              "class": "btn",
+              "name": "btn-stats"
+            },
+            "dataUid": "uid-9"
+          }
+        ],
+        "properties": {
+          "class": "root"
+        },
+        "dataUid": "uid-2"
+      }
+    ],
+    "properties": {},
+    "dataUid": "uid-1"
+  },
+  "classes": {
+    "root": {
+      "content": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": "12",
+        "padding": "20",
+        "backgroundColor": "#0a0f1aee",
+        "borderRadius": 16,
+        "borderColor": "#00ffff44",
+        "borderWidth": "1"
+      }
+    },
+    "title": {
+      "content": {
+        "fontSize": "28",
+        "fontWeight": "bold",
+        "color": "#00ffff"
+      }
+    },
+    "sub": {
+      "content": {
+        "fontSize": "12",
+        "color": "#88aacc"
+      }
+    },
+    "btn-main": {
+      "content": {
+        "fontSize": "18",
+        "fontWeight": "bold",
+        "color": "#000000",
+        "backgroundColor": "#00ffff",
+        "padding": "10",
+        "paddingLeft": "40",
+        "paddingRight": "40",
+        "borderRadius": 8,
+        "cursor": "pointer",
+        "textAlign": "center",
+        "hover": {
+          "backgroundColor": "#33ffff"
+        }
+      }
+    },
+    "btn": {
+      "content": {
+        "fontSize": "16",
+        "color": "#00ffff",
+        "backgroundColor": "#00ffff22",
+        "padding": "8",
+        "paddingLeft": "30",
+        "paddingRight": "30",
+        "borderRadius": 8,
+        "cursor": "pointer",
+        "textAlign": "center",
+        "hover": {
+          "backgroundColor": "#00ffff44"
+        }
+      }
+    }
+  },
+  "ranges": {
+    "uid-1": {
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 19,
+        "column": 8
+      }
+    },
+    "root": {
+      "start": {
+        "line": 2,
+        "column": 4
+      },
+      "end": {
+        "line": 2,
+        "column": 9
+      }
+    },
+    "title": {
+      "start": {
+        "line": 3,
+        "column": 4
+      },
+      "end": {
+        "line": 3,
+        "column": 10
+      }
+    },
+    "sub": {
+      "start": {
+        "line": 4,
+        "column": 4
+      },
+      "end": {
+        "line": 4,
+        "column": 8
+      }
+    },
+    "btn-main": {
+      "start": {
+        "line": 5,
+        "column": 4
+      },
+      "end": {
+        "line": 5,
+        "column": 13
+      }
+    },
+    "btn": {
+      "start": {
+        "line": 7,
+        "column": 4
+      },
+      "end": {
+        "line": 7,
+        "column": 8
+      }
+    },
+    "uid-2": {
+      "start": {
+        "line": 10,
+        "column": 2
+      },
+      "end": {
+        "line": 18,
+        "column": 14
+      }
+    },
+    "uid-3": {
+      "start": {
+        "line": 11,
+        "column": 4
+      },
+      "end": {
+        "line": 11,
+        "column": 40
+      }
+    },
+    "uid-4": {
+      "start": {
+        "line": 12,
+        "column": 4
+      },
+      "end": {
+        "line": 12,
+        "column": 52
+      }
+    },
+    "uid-5": {
+      "start": {
+        "line": 13,
+        "column": 4
+      },
+      "end": {
+        "line": 13,
+        "column": 54
+      }
+    },
+    "uid-6": {
+      "start": {
+        "line": 14,
+        "column": 4
+      },
+      "end": {
+        "line": 14,
+        "column": 57
+      }
+    },
+    "uid-7": {
+      "start": {
+        "line": 15,
+        "column": 4
+      },
+      "end": {
+        "line": 15,
+        "column": 60
+      }
+    },
+    "uid-8": {
+      "start": {
+        "line": 16,
+        "column": 4
+      },
+      "end": {
+        "line": 16,
+        "column": 65
+      }
+    },
+    "uid-9": {
+      "start": {
+        "line": 17,
+        "column": 4
+      },
+      "end": {
+        "line": 17,
+        "column": 56
+      }
+    }
+  }
+}
