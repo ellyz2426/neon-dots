@@ -31,6 +31,9 @@ export class EffectsSystem extends createSystem({}) {
   private pulses: PulseObj[] = [];
   private group!: Group;
   private ambientParticles: { mesh: Mesh; baseY: number; phase: number; speed: number }[] = [];
+  private aiPulseActive = false;
+  private aiPulseT = 0;
+  private aiPulseMeshes: Mesh[] = [];
 
   init() {
     this.group = new Group();
@@ -206,6 +209,12 @@ export class EffectsSystem extends createSystem({}) {
     this.pulses.push({ mesh, time: Math.random() * Math.PI * 2, speed, minEm, maxEm });
   }
 
+  /** Set AI thinking pulse state — pulses ambient orbs faster */
+  setAiPulse(active: boolean) {
+    this.aiPulseActive = active;
+    if (active) this.aiPulseT = 0;
+  }
+
   update(delta: number, time: number) {
     // Animate particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
@@ -236,12 +245,20 @@ export class EffectsSystem extends createSystem({}) {
       (p.mesh.material as MeshStandardMaterial).emissiveIntensity = em;
     }
 
-    // Animate ambient particles (float and bob)
+    // Animate ambient particles (float and bob — faster pulse during AI thinking)
     for (const ap of this.ambientParticles) {
-      ap.phase += delta * ap.speed;
+      const spd = this.aiPulseActive ? ap.speed * 3 : ap.speed;
+      ap.phase += delta * spd;
       ap.mesh.position.y = ap.baseY + Math.sin(ap.phase) * 0.3;
-      const o = 0.2 + Math.sin(ap.phase * 0.7) * 0.15;
-      (ap.mesh.material as MeshStandardMaterial).opacity = Math.max(0.1, Math.min(0.5, o));
+      const baseO = this.aiPulseActive ? 0.35 : 0.2;
+      const ampO = this.aiPulseActive ? 0.25 : 0.15;
+      const o = baseO + Math.sin(ap.phase * 0.7) * ampO;
+      (ap.mesh.material as MeshStandardMaterial).opacity = Math.max(0.1, Math.min(0.6, o));
+      if (this.aiPulseActive) {
+        (ap.mesh.material as MeshStandardMaterial).emissiveIntensity = 1.2 + Math.sin(ap.phase * 2) * 0.6;
+      } else {
+        (ap.mesh.material as MeshStandardMaterial).emissiveIntensity = 0.8;
+      }
     }
   }
 }

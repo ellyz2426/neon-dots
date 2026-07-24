@@ -169,3 +169,8 @@ gameSystem.onLinePlaced = (_t, row, col) => {
     effectsSystem.lineBurst(new Vector3(pos.x, pos.y, pos.z), gameSystem.st.ci);
   }
 };
+
+// AI thinking board border pulse — register with effects system
+gameSystem.onAiThinking = (thinking: boolean) => {
+  effectsSystem.setAiPulse(thinking);
+};

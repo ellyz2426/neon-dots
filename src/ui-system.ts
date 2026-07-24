@@ -52,6 +52,28 @@ export class UISystem extends createSystem({
   // Elapsed time display
   private elapsedDisplayTimer = 0;
 
+  // Timer urgency
+  private lastWarningBeep = 0;
+
+  // AI thinking pulse
+  private aiThinking = false;
+  private aiPulseT = 0;
+
+  // Performance star rating
+  private calcStars(winner: 'player' | 'ai' | 'draw'): number {
+    const s = this.game.st;
+    if (winner !== 'player') return 0;
+    const ratio = s.sc[0] / Math.max(1, s.total);
+    const margin = s.sc[0] - s.sc[1];
+    const marginRatio = margin / Math.max(1, s.total);
+    // 3 stars: >60% boxes + win by >30% margin (or shutout)
+    if (s.sc[1] === 0 || (ratio > 0.6 && marginRatio > 0.3)) return 3;
+    // 2 stars: >50% boxes
+    if (ratio > 0.5) return 2;
+    // 1 star: won
+    return 1;
+  }
+
   setRefs(r: { game: GameSystem; panels: Record<string, Entity>; positions: Record<string, [number, number, number]>; audio: AudioSystem; effects: EffectsSystem; onThemeChange?: (colorIdx: number) => void }) {
     this.game = r.game;
     this.panels = r.panels as Record<PanelKey, Entity>;
@@ -66,8 +88,10 @@ export class UISystem extends createSystem({
     this.game.onTimer = () => this.updTimer();
     this.game.onOver = (w) => this.showResults(w);
     this.game.onAchv = (id) => this.showAchvNotify(id);
-    this.game.onReady = () => { this.showPanel('hud'); this.updHud(); };
+    this.game.onReady = () => { this.showPanel('hud'); this.updHud(); this.lastWarningBeep = 0; };
     this.game.onChain = (count) => this.showChainCombo(count);
+    this.game.onTimerUrgent = (secsLeft) => this.handleTimerUrgency(secsLeft);
+    this.game.onAiThinking = (thinking) => { this.aiThinking = thinking; };
   }
 
   init() {
@@ -204,6 +228,11 @@ export class UISystem extends createSystem({
     this.txt('results', 'txt-score', `${s.sc[0]} - ${s.sc[1]}`);
     this.txt('results', 'txt-moves', `Moves: ${s.moves}`);
 
+    // Star rating
+    const stars = this.calcStars(winner);
+    const starStr = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '';
+    this.txt('results', 'txt-stars', starStr);
+
     // Show elapsed time on results
     const em = Math.floor(s.elapsed / 60);
     const es = Math.floor(s.elapsed % 60);
@@ -288,6 +317,27 @@ export class UISystem extends createSystem({
     if (count >= 2) {
       this.txt('hud', 'txt-notify', `Chain x${count}!`);
       this.chainTimer = 2.0;
+    }
+  }
+
+  private handleTimerUrgency(secsLeft: number) {
+    // Color change on HUD timer text
+    if (secsLeft <= 5) {
+      this.txt('hud', 'txt-timer', `⚠ ${Math.ceil(secsLeft)}s`);
+    } else if (secsLeft <= 10) {
+      this.txt('hud', 'txt-timer', `${Math.ceil(secsLeft)}s`);
+    }
+    // Warning beep at 10s, 5s, 3s, 2s, 1s
+    const thresholds = [10, 5, 3, 2, 1];
+    for (const t of thresholds) {
+      if (secsLeft <= t && this.lastWarningBeep > t) {
+        this.audio.sfx('turn');
+        this.lastWarningBeep = secsLeft;
+        break;
+      }
+    }
+    if (this.lastWarningBeep === 0 || secsLeft > this.lastWarningBeep) {
+      this.lastWarningBeep = secsLeft;
     }
   }
 

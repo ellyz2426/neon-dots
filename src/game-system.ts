@@ -139,6 +139,8 @@ export class GameSystem extends createSystem({
   onBoxComplete?: (row: number, col: number) => void;
   onLinePlaced?: (t: LT, row: number, col: number) => void;
   onUndo?: () => void;
+  onTimerUrgent?: (secsLeft: number) => void;
+  onAiThinking?: (thinking: boolean) => void;
 
   init() {
     this.stats = loadStats();
@@ -161,7 +163,55 @@ export class GameSystem extends createSystem({
     this.aiDly = 0; this.aiWasAhead = false; this.cidx = 0;
     this.undoStack = [];
     this.build();
+
+    // Challenge mode: pre-place random lines to create a mid-game position
+    if (mode === 'challenge') {
+      this.prefillChallenge();
+    }
+
     this.onScore?.(); this.onTurn?.(); this.onReady?.();
+  }
+
+  /** Pre-fill some random lines for Challenge mode to create a mid-game start */
+  private prefillChallenge() {
+    const s = this.st, n = s.n;
+    const allLines: { t: LT; r: number; c: number }[] = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n - 1; c++) allLines.push({ t: 'h', r, c });
+    for (let r = 0; r < n - 1; r++) for (let c = 0; c < n; c++) allLines.push({ t: 'v', r, c });
+
+    // Shuffle
+    for (let i = allLines.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allLines[i], allLines[j]] = [allLines[j], allLines[i]];
+    }
+
+    // Place ~25% of lines, alternating players, avoiding completing any box
+    const target = Math.floor(allLines.length * 0.25);
+    let placed = 0;
+    for (const line of allLines) {
+      if (placed >= target) break;
+      // Check if placing would complete a box — skip if so
+      const wouldComp = this.wouldComplete(line.t, line.r, line.c);
+      if (wouldComp > 0) continue;
+      // Check if placing would create a 3-sided box — skip most of the time to avoid easy setups
+      if (this.would3rd(line.t, line.r, line.c) && Math.random() < 0.7) continue;
+
+      const p: P = (placed % 2 === 0) ? 1 : 2;
+      const arr = line.t === 'h' ? s.hL : s.vL;
+      arr[line.r][line.c] = p;
+
+      // Color the line visual
+      const cs = COLORS[s.ci];
+      const mesh = this.meshMap.get(`${line.t}_${line.r}_${line.c}`);
+      if (mesh) {
+        const cl = p === 1 ? cs.p : cs.a;
+        (mesh.material as MeshStandardMaterial).color.set(cl);
+        (mesh.material as MeshStandardMaterial).emissive.set(cl);
+        (mesh.material as MeshStandardMaterial).emissiveIntensity = 0.7;
+        (mesh.material as MeshStandardMaterial).opacity = 0.85;
+      }
+      placed++;
+    }
   }
 
   build() {
@@ -717,12 +767,14 @@ export class GameSystem extends createSystem({
     if (s.mode === 'speed') {
       s.timer -= delta;
       this.onTimer?.();
+      if (s.timer <= 15 && s.timer > 0) this.onTimerUrgent?.(s.timer);
       if (s.timer <= 0) { s.timer = 0; this.end(); return; }
     }
 
     if (s.cur === 2 && s.mode !== '2player') {
       this.aiDly -= delta;
-      if (this.aiDly <= 0) this.doAi();
+      if (this.aiDly > 0 && this.aiDly + delta >= 0.55) this.onAiThinking?.(true);
+      if (this.aiDly <= 0) { this.onAiThinking?.(false); this.doAi(); }
       return;
     }
 
@@ -765,21 +817,27 @@ export class GameSystem extends createSystem({
     });
     this.pressed = cp;
 
-    // Keyboard
+    // Keyboard — spatial navigation
     this.kdb -= delta;
     const kb = this.input.keyboard;
     const av = this.avail();
     if (av.length && this.kdb <= 0) {
       let moved = false;
-      if (kb.getKeyDown('ArrowRight') || kb.getKeyDown('KeyD')) { this.cidx = (this.cidx + 1) % av.length; moved = true; }
-      else if (kb.getKeyDown('ArrowLeft') || kb.getKeyDown('KeyA')) { this.cidx = (this.cidx - 1 + av.length) % av.length; moved = true; }
-      else if (kb.getKeyDown('ArrowDown') || kb.getKeyDown('KeyS')) { this.cidx = (this.cidx + 5) % av.length; moved = true; }
-      else if (kb.getKeyDown('ArrowUp') || kb.getKeyDown('KeyW')) { this.cidx = (this.cidx - 5 + av.length) % av.length; moved = true; }
+      const cur = av[this.cidx];
+      if (cur && (kb.getKeyDown('ArrowRight') || kb.getKeyDown('KeyD'))) {
+        this.cidx = this.findNearest(av, cur, 1, 0); moved = true;
+      } else if (cur && (kb.getKeyDown('ArrowLeft') || kb.getKeyDown('KeyA'))) {
+        this.cidx = this.findNearest(av, cur, -1, 0); moved = true;
+      } else if (cur && (kb.getKeyDown('ArrowDown') || kb.getKeyDown('KeyS'))) {
+        this.cidx = this.findNearest(av, cur, 0, 1); moved = true;
+      } else if (cur && (kb.getKeyDown('ArrowUp') || kb.getKeyDown('KeyW'))) {
+        this.cidx = this.findNearest(av, cur, 0, -1); moved = true;
+      }
       if (moved) { this.kdb = 0.12; this.updCursor(); }
 
       if (kb.getKeyDown('Space') || kb.getKeyDown('Enter')) {
-        const cur = av[this.cidx];
-        if (cur) this.doPlayerMove(cur.t, cur.r, cur.c);
+        const sel = av[this.cidx];
+        if (sel) this.doPlayerMove(sel.t, sel.r, sel.c);
         this.kdb = 0.2;
       }
     }
@@ -793,13 +851,49 @@ export class GameSystem extends createSystem({
       }
       const stk = rp.getAxesValues(InputComponent.Thumbstick);
       if (stk && this.kdb <= 0 && av.length) {
-        if (stk.x > 0.5) { this.cidx = (this.cidx + 1) % av.length; this.updCursor(); this.kdb = 0.15; }
-        else if (stk.x < -0.5) { this.cidx = (this.cidx - 1 + av.length) % av.length; this.updCursor(); this.kdb = 0.15; }
-        else if (stk.y < -0.5) { this.cidx = (this.cidx + 5) % av.length; this.updCursor(); this.kdb = 0.15; }
-        else if (stk.y > 0.5) { this.cidx = (this.cidx - 5 + av.length) % av.length; this.updCursor(); this.kdb = 0.15; }
+        const cur = av[this.cidx];
+        if (cur) {
+          if (stk.x > 0.5) { this.cidx = this.findNearest(av, cur, 1, 0); this.updCursor(); this.kdb = 0.15; }
+          else if (stk.x < -0.5) { this.cidx = this.findNearest(av, cur, -1, 0); this.updCursor(); this.kdb = 0.15; }
+          else if (stk.y < -0.5) { this.cidx = this.findNearest(av, cur, 0, 1); this.updCursor(); this.kdb = 0.15; }
+          else if (stk.y > 0.5) { this.cidx = this.findNearest(av, cur, 0, -1); this.updCursor(); this.kdb = 0.15; }
+        }
       }
     }
 
     if (s.sc[1] > s.sc[0]) this.aiWasAhead = true;
+  }
+
+  /** Find nearest available line in a direction (spatial navigation) */
+  private findNearest(av: { t: LT; r: number; c: number }[], cur: { t: LT; r: number; c: number }, dx: number, dy: number): number {
+    const n = this.st.n, half = (n - 1) / 2;
+    // Convert current line to center position in grid space
+    const cx = cur.t === 'h' ? cur.c + 0.5 : cur.c;
+    const cy = cur.t === 'h' ? cur.r : cur.r + 0.5;
+
+    let bestIdx = this.cidx;
+    let bestDist = Infinity;
+
+    for (let i = 0; i < av.length; i++) {
+      if (i === this.cidx) continue;
+      const a = av[i];
+      const ax = a.t === 'h' ? a.c + 0.5 : a.c;
+      const ay = a.t === 'h' ? a.r : a.r + 0.5;
+      const ddx = ax - cx, ddy = ay - cy;
+
+      // Only consider lines in the requested direction
+      if (dx > 0 && ddx <= 0.01) continue;
+      if (dx < 0 && ddx >= -0.01) continue;
+      if (dy > 0 && ddy <= 0.01) continue;
+      if (dy < 0 && ddy >= -0.01) continue;
+
+      // Distance with preference for the primary axis
+      const primaryDist = dx !== 0 ? Math.abs(ddx) : Math.abs(ddy);
+      const crossDist = dx !== 0 ? Math.abs(ddy) : Math.abs(ddx);
+      const dist = primaryDist + crossDist * 2; // penalize cross-axis movement
+
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+    return bestIdx;
   }
 }
